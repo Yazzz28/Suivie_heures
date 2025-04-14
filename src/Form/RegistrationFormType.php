@@ -41,6 +41,28 @@ class RegistrationFormType extends AbstractType
                     )
                 ],
             ])
+            ->add('firstName', null, [
+                'label' => 'Prénom',
+                'attr' => [
+                    'placeholder' => 'Entrez votre prénom',
+                ],
+                'constraints' => [
+                    new NotBlank([
+                        'message' => 'Veuillez entrer votre prénom',
+                    ]),
+                ],
+            ])
+            ->add('lastName', null, [
+                'label' => 'Nom',
+                'attr' => [
+                    'placeholder' => 'Entrez votre nom',
+                ],
+                'constraints' => [
+                    new NotBlank([
+                        'message' => 'Veuillez entrer votre nom',
+                    ]),
+                ],
+            ])
             ->add('agreeTerms', CheckboxType::class, [
                 'mapped' => false,
                 'constraints' => [
