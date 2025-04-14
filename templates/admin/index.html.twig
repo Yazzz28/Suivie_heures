@@ -1,0 +1,248 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Panel Admin - Heures des employés{% endblock %}
+
+{% block body %}
+    <div class="container mt-4">
+        <a href="{{ path("app_logout") }}" > Se déconnecter</a>
+        <h1 class="mb-4">Suivi des heures des employés</h1>
+
+        <div class="row">
+            {% for user in users %}
+                {% if 'ROLE_USER' in user.roles and 'ROLE_ADMIN' not in user.roles %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0 text-white">{{ user.lastName }} {{ user.firstName }}</h4>
+                                <button class="btn btn-sm btn-light toggle-user-btn" data-user-id="{{ user.id }}">Afficher/Masquer</button>
+                            </div>
+                            <div class="card-body user-details" id="user-details-{{ user.id }}" style="display: none;">
+                                {% set groupedWorks = {} %}
+
+                                {# Grouper les work par mois/année #}
+                                {% for work in user.works %}
+                                    {% set key = work.date|date('Y-m') %}
+                                    {% if groupedWorks[key] is not defined %}
+                                        {% set groupedWorks = groupedWorks|merge({ (key): [work] }) %}
+                                    {% else %}
+                                        {% set groupedWorks = groupedWorks|merge({ (key): groupedWorks[key]|merge([work]) }) %}
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if groupedWorks is empty %}
+                                    <p class="text-muted">Aucune donnée disponible.</p>
+                                {% else %}
+                                    {# Trier les mois par ordre chronologique inverse #}
+                                    {% set sortedGroupedWorks = groupedWorks|keys|sort((a, b) => b <=> a) %}
+
+                                    {% for key in sortedGroupedWorks %}
+                                        {% set year = key|split('-')[0] %}
+                                        {% set month = key|split('-')[1] %}
+                                        {% set monthName = (year ~ '-' ~ month ~ '-01')|date('F') %}
+                                        <div class="month-block mt-4">
+                                            <h5 class="month-title">{{ monthName|trans|capitalize }} {{ year }}</h5>
+                                            <table class="table table-bordered table-striped table-sm mt-2">
+                                                <thead class="table-light">
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Début</th>
+                                                    <th>Pause</th>
+                                                    <th>Fin</th>
+                                                    <th>Durée nette</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% set totalNet = 0 %}
+                                                {% for work in groupedWorks[key]|sort((a, b) => b.date <=> a.date) %}
+                                                    {% set start = work.startTime.timestamp %}
+                                                    {% set end = work.endTime.timestamp %}
+                                                    {% set pause = 0 %}
+                                                    {% if work.pauseStart and work.pauseEnd %}
+                                                        {% set pause = work.pauseEnd.timestamp - work.pauseStart.timestamp %}
+                                                    {% endif %}
+                                                    {% set net = (end - start - pause) // 60 %}
+                                                    {% set totalNet = totalNet + net %}
+                                                    <tr>
+                                                        <td>{{ work.date|date('d/m/Y') }}</td>
+                                                        <td>{{ work.startTime|date('H:i') }}</td>
+                                                        <td>
+                                                            {% if work.pauseStart and work.pauseEnd %}
+                                                                {{ work.pauseStart|date('H:i') }} - {{ work.pauseEnd|date('H:i') }}
+                                                            {% else %}
+                                                                <span class="text-muted">Aucune</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ work.endTime|date('H:i') }}</td>
+                                                        <td>{{ (net // 60) }}h {{ (net % 60) }}min</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                                <div class="text-end mt-2">
+                                                    <a href="{{ path('app_admin_export', {
+                                                        userId: user.id,
+                                                        year: year,
+                                                        month: month
+                                                    }) }}"
+                                                       class="btn btn-sm btn-outline-primary"
+                                                       target="_blank">
+                                                        📄 Exporter le PDF
+                                                    </a>
+                                                </div>
+
+                                                <tfoot>
+                                                <tr class="table-success">
+                                                    <th colspan="4" class="text-end">Total du mois :</th>
+                                                    <th>{{ (totalNet // 60) }}h {{ (totalNet % 60) }}min</th>
+                                                </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: #003c8c;
+        }
+
+        /* Card Styles */
+        .card {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            background-color: rgba(136, 132, 122, 0.45);
+            border-bottom: none;
+        }
+
+        .card-header h4 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* Table Styles */
+        .table {
+            width: 100%;
+            margin-bottom: 1rem;
+            background-color: #fff;
+            border-collapse: collapse;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #dee2e6;
+        }
+
+        .table thead th {
+            background-color: #f1f1f1;
+            font-weight: bold;
+        }
+
+        .table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .table tfoot th {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        /* Month Block Styles */
+        .month-block {
+            background-color: #fff;
+            padding: 20px;
+            border-left: 5px solid #0d6efd;
+            border-bottom: 5px solid #0d6efd;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .month-title {
+            font-size: 1.4rem;
+            color: #0d6efd;
+            margin-bottom: 10px;
+        }
+
+        /* Button Styles */
+        .btn {
+            border-radius: 25px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .btn-outline-primary {
+            border-color: #0d6efd;
+            color: #0d6efd;
+        }
+
+        .btn-outline-primary:hover {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .card {
+                margin-bottom: 20px;
+            }
+
+            .table th, .table td {
+                padding: 10px;
+            }
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleButtons = document.querySelectorAll('.toggle-user-btn');
+            toggleButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const userId = this.getAttribute('data-user-id');
+                    const userDetails = document.getElementById('user-details-' + userId);
+                    if (userDetails.style.display === 'none' || userDetails.style.display === '') {
+                        userDetails.style.display = 'block';
+                        this.textContent = 'Masquer';
+                    } else {
+                        userDetails.style.display = 'none';
+                        this.textContent = 'Afficher';
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

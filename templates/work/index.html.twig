@@ -1,0 +1,195 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes heures{% endblock %}
+
+{% block body %}
+    <a href="{{ path('app_logout') }}" class="btn btn-link">Se déconnecter</a>
+    <div class="container mt-4">
+        <h1 class="mb-3">Bonjour, {{ user.firstName }}</h1>
+
+        {% if user.works is defined and user.works|length > 0 %}
+            {% set groupedWorks = {} %}
+
+            {# Grouper les travaux par mois/année #}
+            {% for work in user.works %}
+                {% set key = work.date|date('Y-m') %}
+                {% if groupedWorks[key] is not defined %}
+                    {% set groupedWorks = groupedWorks|merge({ (key): [work] }) %}
+                {% else %}
+                    {% set groupedWorks = groupedWorks|merge({ (key): groupedWorks[key]|merge([work]) }) %}
+                {% endif %}
+            {% endfor %}
+
+            {# Trier les mois par ordre chronologique inverse #}
+            {% set sortedGroupedWorks = groupedWorks|keys|sort((a, b) => b <=> a) %}
+
+            {% for key in sortedGroupedWorks %}
+                {% set year = key|split('-')[0] %}
+                {% set month = key|split('-')[1] %}
+                {% set monthName = (year ~ '-' ~ month ~ '-01')|date('F') %}
+
+                <div class="month-block mt-4">
+                    <h2 class="month-title">{{ monthName|capitalize }} {{ year }}</h2>
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Début</th>
+                            <th>Pause</th>
+                            <th>Fin</th>
+                            <th>Durée nette</th>
+                            <th>Modifier</th>
+                            <th>Supprimer</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for work in groupedWorks[key]|sort((a, b) => b.date <=> a.date) %}
+                            <tr>
+                                <td>{{ work.date|date('d/m/Y') }}</td>
+                                <td>{{ work.startTime|date('H:i') }}</td>
+                                <td>
+                                    {% if work.pauseStart is not null and work.pauseEnd is not null %}
+                                        {{ work.pauseStart|date('H:i') }} - {{ work.pauseEnd|date('H:i') }}
+                                    {% else %}
+                                        Aucune
+                                    {% endif %}
+                                </td>
+                                <td>{{ work.endTime|date('H:i') }}</td>
+                                <td>
+                                    {% set start = work.startTime.timestamp %}
+                                    {% set end = work.endTime.timestamp %}
+                                    {% set pause = 0 %}
+                                    {% if work.pauseStart is not null and work.pauseEnd is not null %}
+                                        {% set pause = work.pauseEnd.timestamp - work.pauseStart.timestamp %}
+                                    {% endif %}
+                                    {% set netDuration = (end - start - pause) // 60 %}
+                                    {{ (netDuration // 60) }}h {{ (netDuration % 60) }}min
+                                </td>
+                                <td>
+                                    <a class="btn btn-sm btn-outline-primary"
+                                       href="{{ path('app_work_edit', { id: user.id, work: work.id }) }}">
+                                        Modifier
+                                    </a>
+                                </td>
+                                <td>
+                                    <form method="post" action="{{ path('app_work_delete', { id: user.id, work: work.id }) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ work.id) }}">
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">Supprimer</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">Aucune heure saisie pour l’instant.</div>
+        {% endif %}
+
+        <div class="mt-4">
+            <a href="{{ path('app_work_add', {'id': user.id}) }}" class="btn btn-success">
+                Ajouter une journée
+            </a>
+        </div>
+    </div>
+
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #0d6efd;
+        }
+
+        .month-block {
+            background-color: #fff;
+            padding: 20px;
+            border-left: 5px solid #0d6efd;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .month-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #0d6efd;
+            margin-bottom: 10px;
+        }
+
+        .table {
+            width: 100%;
+            margin-bottom: 1rem;
+            background-color: #fff;
+            border-collapse: collapse;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .table th, .table td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+
+        .table thead th {
+            background-color: #f1f1f1;
+            font-weight: bold;
+        }
+
+        .table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .btn {
+            border-radius: 25px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .btn-outline-primary {
+            border-color: #0d6efd;
+            color: #0d6efd;
+        }
+
+        .btn-outline-primary:hover {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+
+        .btn-outline-danger {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
+        .btn-outline-danger:hover {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+
+        .alert-info {
+            color: #0c5460;
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+    </style>
+{% endblock %}
