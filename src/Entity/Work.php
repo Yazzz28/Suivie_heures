@@ -14,7 +14,7 @@ class Work
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'work')]
+    #[ORM\ManyToOne(inversedBy: 'works')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
