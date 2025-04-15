@@ -85,12 +85,6 @@ class AppFixtures extends Fixture
                         }
                     }
 
-                    // Durée travaillée = end - start - pause
-                    $interval = $start->diff($end);
-                    $durationInMinutes = ($interval->h * 60 + $interval->i) - $pauseDuration;
-                    $duree = (new \DateTime())->setTime(floor($durationInMinutes / 60), $durationInMinutes % 60);
-                    $workEntry->setDuree($duree);
-
                     // Transports (0 à 3)
                     $workEntry->setNumberOfTransport(rand(0, 3));
 
