@@ -29,7 +29,6 @@ class AppFixtures extends Fixture
         $admin->setLastName('Principal');
         $admin->setRoles(['ROLE_ADMIN']);
         $admin->setPassword($this->passwordHasher->hashPassword($admin, 'adminpass'));
-        $admin->setIsVerified(true);
         $manager->persist($admin);
 
         // --- USERS ---
@@ -41,12 +40,11 @@ class AppFixtures extends Fixture
             $user->setLastName($this->faker->lastName());
             $user->setRoles(['ROLE_USER']);
             $user->setPassword($this->passwordHasher->hashPassword($user, 'userpass'));
-            $user->setIsVerified(true);
             $manager->persist($user);
             $users[] = $user;
         }
 
-        // --- WORK ENTRIES (un jour par jour dans le mois) ---
+        // --- WORK ENTRIES ---
         foreach ($users as $user) {
             for ($m = 0; $m < 3; $m++) {
                 $startDate = (new DateTime("first day of -$m month"))->setTime(0, 0);
@@ -56,7 +54,6 @@ class AppFixtures extends Fixture
                 $period = new \DatePeriod($startDate, $interval, $endDate);
 
                 foreach ($period as $day) {
-                    // Ignore les week-ends
                     if (in_array($day->format('N'), [6, 7])) {
                         continue;
                     }
@@ -65,7 +62,7 @@ class AppFixtures extends Fixture
                     $date = clone $day;
 
                     $start = (clone $date)->setTime(rand(7, 9), 0);
-                    $end = (clone $start)->modify('+'.rand(4, 8).' hours');
+                    $end = (clone $start)->modify('+'.rand(6, 9).' hours');
 
                     $workEntry->setUser($user);
                     $workEntry->setDate($date);
@@ -73,7 +70,8 @@ class AppFixtures extends Fixture
                     $workEntry->setEndTime($end);
                     $workEntry->setComment($this->faker->optional()->sentence());
 
-                    // Pause aléatoire (50% des cas)
+                    // Pause aléatoire (50%)
+                    $pauseDuration = 0;
                     if (rand(0, 1)) {
                         $pauseStart = (clone $start)->modify('+'.rand(90, 180).' minutes');
                         $pauseDuration = rand(15, 60);
@@ -82,7 +80,25 @@ class AppFixtures extends Fixture
                         if ($pauseEnd < $end) {
                             $workEntry->setPauseStart($pauseStart);
                             $workEntry->setPauseEnd($pauseEnd);
+                        } else {
+                            $pauseDuration = 0;
                         }
+                    }
+
+                    // Durée travaillée = end - start - pause
+                    $interval = $start->diff($end);
+                    $durationInMinutes = ($interval->h * 60 + $interval->i) - $pauseDuration;
+                    $duree = (new \DateTime())->setTime(floor($durationInMinutes / 60), $durationInMinutes % 60);
+                    $workEntry->setDuree($duree);
+
+                    // Transports (0 à 3)
+                    $workEntry->setNumberOfTransport(rand(0, 3));
+
+                    // Congés
+                    if (rand(0, 20) === 0) {
+                        $workEntry->setDayOf(true);
+                    } elseif (rand(0, 30) === 0) {
+                        $workEntry->setDayOfWhitoutSolde(true);
                     }
 
                     $manager->persist($workEntry);

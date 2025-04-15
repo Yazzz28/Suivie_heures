@@ -34,6 +34,18 @@ class WorkType extends AbstractType
                     'type' => 'number',
                 ],
             ])
+            ->add('dayOf', null, [
+                'label' => 'Congé',
+                'attr' => [
+                    'type' => 'checkbox',
+                ],
+            ])
+            ->add('dayOfWhitoutSolde', null, [
+                'label' => 'Congé sans solde',
+                'attr' => [
+                    'type' => 'checkbox',
+                ],
+            ])
             ->add('comment',
             null,[
                     'label' => 'Commentaire',

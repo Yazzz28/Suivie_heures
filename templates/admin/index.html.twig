@@ -60,8 +60,8 @@
                                             {% set totalNet = 0 %}
                                             {% set totalTransports = 0 %}
                                             {% for work in groupedWorks[key]|sort((a, b) => b.date <=> a.date) %}
-                                                {% set start = work.startTime.timestamp %}
-                                                {% set end = work.endTime.timestamp %}
+                                                {% set start = work.startTime is not null ? work.startTime.timestamp : 0 %}
+                                                {% set end = work.endTime is not null ? work.endTime.timestamp : 0 %}
                                                 {% set pause = 0 %}
                                                 {% if work.pauseStart and work.pauseEnd %}
                                                     {% set pause = work.pauseEnd.timestamp - work.pauseStart.timestamp %}
@@ -69,7 +69,11 @@
                                                 {% set net = (end - start - pause) // 60 %}
                                                 {% set totalNet = totalNet + net %}
                                                 {% set totalTransports = totalTransports + work.numberOfTransport %}
-                                                <tr>
+                                                <tr class="
+                                                        {% if work.dayOf %} day-of
+                                                        {% elseif work.dayOfWhitoutSolde %} day-of-without-solde
+                                                        {% endif %}
+                                                    ">
                                                     <td data-label="Date">{{ work.date|date('d/m/Y') }}</td>
                                                     <td data-label="Début">{{ work.startTime|date('H:i') }}</td>
                                                     <td data-label="Pause">
@@ -240,6 +244,14 @@
             background-color: #0d6efd;
             color: #fff;
         }
+        .day-of {
+            background-color: #fff3cd !important; /* orange pâle */
+        }
+
+        .day-of-without-solde {
+            background-color: #f8d7da !important; /* rouge pâle */
+        }
+
         /* Responsive Styles */
         @media (max-width: 1024px) {
             .user-card {

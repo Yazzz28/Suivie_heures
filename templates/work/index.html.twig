@@ -13,7 +13,6 @@
         </div>
         {% if user.works is defined and user.works|length > 0 %}
             {% set groupedWorks = {} %}
-            {# Grouper les travaux par mois/année #}
             {% for work in user.works %}
                 {% set key = work.date|date('Y-m') %}
                 {% if groupedWorks[key] is not defined %}
@@ -40,14 +39,32 @@
                             <th>Début</th>
                             <th>Pause</th>
                             <th>Fin</th>
+                            <th>Transports</th>
                             <th>Durée nette</th>
                             <th>Modifier</th>
                             <th>Supprimer</th>
                         </tr>
                         </thead>
                         <tbody>
+                        {% set totalNet = 0 %}
+                        {% set totalTransports = 0 %}
                         {% for work in groupedWorks[key]|sort((a, b) => b.date <=> a.date) %}
-                            <tr>
+                            {% set start = work.startTime is not null ? work.startTime.timestamp : 0 %}
+                            {% set end = work.endTime is not null ? work.endTime.timestamp : 0 %}
+                            {% set pause = 0 %}
+                            {% if work.pauseStart is not null and work.pauseEnd is not null %}
+                                {% set pause = work.pauseEnd.timestamp - work.pauseStart.timestamp %}
+                            {% endif %}
+                            {% set netDuration = (end - start - pause) // 60 %}
+                            {% set hours = netDuration // 60 %}
+                            {% set minutes = netDuration % 60 %}
+                            {% set totalNet = totalNet + netDuration %}
+                            {% set totalTransports = totalTransports + work.numberOfTransport %}
+                            <tr class="
+        {% if work.dayOf %} day-of
+        {% elseif work.dayOfWhitoutSolde %} day-of-without-solde
+        {% endif %}
+    ">
                                 <td data-label="Date">{{ work.date|date('d/m/Y') }}</td>
                                 <td data-label="Début">{{ work.startTime|date('H:i') }}</td>
                                 <td data-label="Pause">
@@ -58,15 +75,13 @@
                                     {% endif %}
                                 </td>
                                 <td data-label="Fin">{{ work.endTime|date('H:i') }}</td>
+                                <td data-label="Transports">{{ work.numberOfTransport }}</td>
                                 <td data-label="Durée nette">
-                                    {% set start = work.startTime.timestamp %}
-                                    {% set end = work.endTime.timestamp %}
-                                    {% set pause = 0 %}
-                                    {% if work.pauseStart is not null and work.pauseEnd is not null %}
-                                        {% set pause = work.pauseEnd.timestamp - work.pauseStart.timestamp %}
+                                    {% if work.startTime is not null and work.endTime is not null %}
+                                        {{ hours }}h {{ minutes }}min
+                                    {% else %}
+                                        N/A
                                     {% endif %}
-                                    {% set netDuration = (end - start - pause) // 60 %}
-                                    {{ (netDuration // 60) }}h {{ (netDuration % 60) }}min
                                 </td>
                                 <td data-label="Modifier">
                                     <a class="edit-btn" href="{{ path('app_work_edit', { id: user.id, work: work.id }) }}">
@@ -82,6 +97,13 @@
                             </tr>
                         {% endfor %}
                         </tbody>
+                        <tfoot>
+                        <tr>
+                            <th colspan="4" class="footer-total">Total du mois :</th>
+                            <th>{{ totalTransports }}</th>
+                            <th>{{ (totalNet // 60) }}h {{ (totalNet % 60) }}min</th>
+                        </tr>
+                        </tfoot>
                     </table>
                 </div>
             {% endfor %}
@@ -208,6 +230,14 @@
             border: 1px solid #bee5eb;
             border-radius: 4px;
         }
+        .day-of {
+            background-color: #fff3cd !important; /* orange pâle */
+        }
+
+        .day-of-without-solde {
+            background-color: #f8d7da !important; /* rouge pâle */
+        }
+
         /* Responsive Styles */
         @media (max-width: 768px) {
             .container {

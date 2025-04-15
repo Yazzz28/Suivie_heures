@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Work;
 use App\Form\WorkType;
+use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -45,13 +46,26 @@ final class WorkController extends AbstractController
         }
         $this->denyAccessUnlessGranted('ROLE_USER');
 
-        $workEntry = new Work();
-        $form = $this->createForm(WorkType::class, $workEntry);
+        $work = new Work();
+        $form = $this->createForm(WorkType::class, $work);
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $workEntry->setUser($this->getUser());
-            $em->persist($workEntry);
+            $work->setUser($this->getUser());
+            if ($work->getDayOf()) {
+                $work->setStartTime(new DateTime('09:00'));
+                $work->setEndTime(new DateTime('17:00'));
+                $work->setPauseStart(new DateTime('12:00'));
+                $work->setPauseEnd(new DateTime('13:00'));
+            }
+            if ($work->getDayOfWhitoutSolde()) {
+                $work->setStartTime(null);
+                $work->setEndTime(null);
+                $work->setPauseStart(null);
+                $work->setPauseEnd(null);
+                $work->setDuree(new DateTime('00:00:00'));
+            }
+            $em->persist($work);
             $em->flush();
 
             $this->addFlash('success', 'Heure enregistrée avec succès !');
@@ -75,6 +89,19 @@ final class WorkController extends AbstractController
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
+            if ($work->getDayOf()) {
+                $work->setStartTime(new DateTime('09:00'));
+                $work->setEndTime(new DateTime('17:00'));
+                $work->setPauseStart(new DateTime('12:00'));
+                $work->setPauseEnd(new DateTime('13:00'));
+            }
+            if ($work->getDayOfWhitoutSolde()) {
+                $work->setStartTime(null);
+                $work->setEndTime(null);
+                $work->setPauseStart(null);
+                $work->setPauseEnd(null);
+                $work->setDuree(new DateTime('00:00:00'));
+            }
             $em->flush();
 
             $this->addFlash('success', 'Heure modifiée avec succès !');

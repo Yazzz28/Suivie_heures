@@ -43,6 +43,14 @@
             color: #155724;
             font-weight: bold;
         }
+        .day-of {
+            background-color: #fff3cd !important; /* orange pâle */
+        }
+
+        .day-of-without-solde {
+            background-color: #f8d7da !important; /* rouge pâle */
+        }
+
         .total-row td {
             font-weight: bold;
         }
@@ -66,8 +74,8 @@
     {% set totalNet = 0 %}
     {% set totalTransports = 0 %}
     {% for work in works|sort((a, b) => a.date <=> b.date) %}
-        {% set start = work.startTime.timestamp %}
-        {% set end = work.endTime.timestamp %}
+        {% set start = work.startTime is not null ? work.startTime.timestamp : 0 %}
+        {% set end = work.endTime is not null ? work.endTime.timestamp : 0 %}
         {% set pause = 0 %}
         {% if work.pauseStart and work.pauseEnd %}
             {% set pause = work.pauseEnd.timestamp - work.pauseStart.timestamp %}
@@ -75,8 +83,12 @@
         {% set net = (end - start - pause) // 60 %}
         {% set totalNet = totalNet + net %}
         {% set totalTransports = totalTransports + work.numberOfTransport %}
-        <tr>
-            <td>{{ work.date|date('d/m/Y') }}</td>
+        <tr class="
+            {% if work.dayOf %} day-of
+            {% elseif work.dayOfWhitoutSolde %} day-of-without-solde
+            {% endif %}
+        ">
+        <td>{{ work.date|date('d/m/Y') }}</td>
             <td>{{ work.startTime|date('H:i') }}</td>
             <td>
                 {% if work.pauseStart and work.pauseEnd %}
