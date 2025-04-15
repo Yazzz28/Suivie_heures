@@ -27,6 +27,13 @@ class WorkType extends AbstractType
             ->add('endTime', null, [
                 'widget' => 'single_text',
             ])
+            ->add('numberOfTransport', null, [
+                'label' => 'Nombre de transports',
+                'attr' => [
+                    'min' => 0,
+                    'type' => 'number',
+                ],
+            ])
             ->add('comment',
             null,[
                     'label' => 'Commentaire',

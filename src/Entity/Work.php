@@ -36,6 +36,9 @@ class Work
     #[ORM\Column(type: 'time', nullable: true)]
     private ?DateTimeInterface $duree = null;
 
+    #[ORM\Column( nullable: true)]
+    private ?int $numberOfTransport = null;
+
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $comment = null;
 
@@ -59,6 +62,12 @@ class Work
     public function getPauseEnd(): ?\DateTimeInterface { return $this->pauseEnd; }
     public function setPauseEnd(?\DateTimeInterface $pauseEnd): static { $this->pauseEnd = $pauseEnd; return $this; }
 
+    public function getNumberOfTransport(): ?int { return $this->numberOfTransport; }
+    public function setNumberOfTransport(?int $numberOfTransport): static
+    {
+        $this->numberOfTransport = $numberOfTransport;
+        return $this;
+    }
     public function getComment(): ?string { return $this->comment; }
     public function setComment(?string $comment): static { $this->comment = $comment; return $this; }
 

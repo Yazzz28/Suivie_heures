@@ -3,11 +3,9 @@
 {% block title %}Saisie des heures{% endblock %}
 
 {% block body %}
-    <div class="container mt-4">
-        <button class="btn btn-primary mb-3">
-            <a href="{{ path('app_work', {'id': app.user.id}) }}" style="color: white; text-decoration: none;">Retour</a>
-        </button>
-        <h1 class="mb-4">Saisir mes heures</h1>
+    <div class="container">
+        <a class="back-link" href="{{ path('app_work', {'id': app.user.id}) }}">Retour</a>
+        <h1>Saisir mes heures</h1>
 
         {{ form_start(form) }}
         <div class="form-group">
@@ -26,67 +24,102 @@
             {{ form_row(form.endTime) }}
         </div>
         <div class="form-group">
+            {{ form_row(form.numberOfTransport) }}
+        </div>
+        <div class="form-group">
             {{ form_row(form.comment) }}
         </div>
-
-        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        <button type="submit">Enregistrer</button>
         {{ form_end(form) }}
     </div>
 
     <style>
+        /* Réinitialisation et base typographique */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
         body {
+            margin: 0;
             font-family: 'Arial', sans-serif;
             background-color: #f4f4f4;
             color: #333;
         }
 
+        /* Conteneur principal centré et responsive */
         .container {
             max-width: 600px;
-            margin: 0 auto;
+            margin: 20px auto;
             padding: 20px;
             background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
+        /* Lien de retour stylisé comme un bouton */
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background-color: #0d6efd;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: background-color 0.3s;
+        }
+        .back-link:hover {
+            background-color: #0b5ed7;
+        }
+
+        /* Titre principal */
         h1 {
             font-size: 1.5rem;
             color: #0d6efd;
             text-align: center;
+            margin-bottom: 20px;
         }
 
+        /* Styles de formulaire */
         .form-group {
             margin-bottom: 15px;
         }
-
         .form-group label {
+            display: block;
+            margin-bottom: 5px;
             font-weight: bold;
-            color: #333;
         }
-
-        .form-group input, .form-group textarea {
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
             width: 100%;
             padding: 10px;
-            border: 1px solid #dee2e6;
+            border: 1px solid #ccc;
             border-radius: 4px;
             font-size: 1rem;
         }
 
-        .btn {
+        /* Bouton principal */
+        button[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: none;
             border-radius: 25px;
-            padding: 10px 20px;
-            font-size: 1rem;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        .btn-primary {
             background-color: #0d6efd;
-            border-color: #0d6efd;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button[type="submit"]:hover {
+            background-color: #0b5ed7;
         }
 
-        .btn-primary:hover {
-            background-color: #0b5ed7;
-            border-color: #0a58ca;
+        /* Adaptation sur petits écrans */
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
         }
     </style>
 {% endblock %}

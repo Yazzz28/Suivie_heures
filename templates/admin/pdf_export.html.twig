@@ -11,14 +11,12 @@
             margin: 0;
             padding: 20px;
         }
-
         h1 {
             font-size: 1.5rem;
             text-align: center;
             color: #0d6efd;
             margin-bottom: 20px;
         }
-
         table {
             width: 100%;
             border-collapse: collapse;
@@ -28,28 +26,23 @@
             overflow: hidden;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-
         th, td {
             border: 1px solid #dee2e6;
             padding: 12px;
             text-align: center;
         }
-
         th {
             background-color: #f1f1f1;
             font-weight: bold;
         }
-
         tbody tr:nth-child(even) {
             background-color: #f9f9f9;
         }
-
         tfoot th {
             background-color: #d4edda;
             color: #155724;
             font-weight: bold;
         }
-
         .total-row td {
             font-weight: bold;
         }
@@ -58,7 +51,6 @@
 <body>
 <h1>Récapitulatif - {{ user.firstName }} {{ user.lastName }}<br>
     Mois : {{ month }}/{{ year }}</h1>
-
 <table>
     <thead>
     <tr>
@@ -66,11 +58,13 @@
         <th>Début</th>
         <th>Pause</th>
         <th>Fin</th>
+        <th>Nombre de transports</th>
         <th>Durée nette</th>
     </tr>
     </thead>
     <tbody>
     {% set totalNet = 0 %}
+    {% set totalTransports = 0 %}
     {% for work in works|sort((a, b) => a.date <=> b.date) %}
         {% set start = work.startTime.timestamp %}
         {% set end = work.endTime.timestamp %}
@@ -80,23 +74,30 @@
         {% endif %}
         {% set net = (end - start - pause) // 60 %}
         {% set totalNet = totalNet + net %}
+        {% set totalTransports = totalTransports + work.numberOfTransport %}
         <tr>
             <td>{{ work.date|date('d/m/Y') }}</td>
             <td>{{ work.startTime|date('H:i') }}</td>
             <td>
                 {% if work.pauseStart and work.pauseEnd %}
                     {{ work.pauseStart|date('H:i') }} - {{ work.pauseEnd|date('H:i') }}
-                {% else %} - {% endif %}
+                {% else %}
+                    -
+                {% endif %}
             </td>
             <td>{{ work.endTime|date('H:i') }}</td>
+            <td>{{ work.numberOfTransport }}</td>
             <td>{{ (net // 60) }}h {{ (net % 60) }}min</td>
         </tr>
     {% endfor %}
-    <tr class="total-row">
-        <td colspan="4" style="text-align:right;"><strong>Total</strong></td>
-        <td><strong>{{ (totalNet // 60) }}h {{ (totalNet % 60) }}min</strong></td>
-    </tr>
     </tbody>
+    <tfoot>
+    <tr class="total-row">
+        <th colspan="4" style="text-align:right;">Total du mois :</th>
+        <th>{{ totalTransports }}</th>
+        <th>{{ (totalNet // 60) }}h {{ (totalNet % 60) }}min</th>
+    </tr>
+    </tfoot>
 </table>
 </body>
 </html>

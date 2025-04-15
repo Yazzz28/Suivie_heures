@@ -1,105 +1,101 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Panel Admin - Heures des employés{% endblock %}
-
 {% block body %}
-    <div class="container mt-4">
-        <a href="{{ path("app_logout") }}" > Se déconnecter</a>
-        <h1 class="mb-4">Suivi des heures des employés</h1>
-
-        <div class="row">
+    <div class="admin-container">
+        <a href="{{ path('app_logout') }}" class="logout-link">Se déconnecter</a>
+        <h1 class="page-title">Suivi des heures des employés</h1>
+        <div class="users-grid">
             {% for user in users %}
                 {% if 'ROLE_USER' in user.roles and 'ROLE_ADMIN' not in user.roles %}
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card shadow-sm mb-4">
-                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                                <h4 class="mb-0 text-white">{{ user.lastName }} {{ user.firstName }}</h4>
-                                <button class="btn btn-sm btn-light toggle-user-btn" data-user-id="{{ user.id }}">Afficher/Masquer</button>
-                            </div>
-                            <div class="card-body user-details" id="user-details-{{ user.id }}" style="display: none;">
-                                {% set groupedWorks = {} %}
-
-                                {# Grouper les work par mois/année #}
-                                {% for work in user.works %}
-                                    {% set key = work.date|date('Y-m') %}
-                                    {% if groupedWorks[key] is not defined %}
-                                        {% set groupedWorks = groupedWorks|merge({ (key): [work] }) %}
-                                    {% else %}
-                                        {% set groupedWorks = groupedWorks|merge({ (key): groupedWorks[key]|merge([work]) }) %}
-                                    {% endif %}
-                                {% endfor %}
-
-                                {% if groupedWorks is empty %}
-                                    <p class="text-muted">Aucune donnée disponible.</p>
+                    <div class="user-card">
+                        <div class="card-header">
+                            <h4 class="user-name">{{ user.lastName }} {{ user.firstName }}</h4>
+                            <button class="toggle-user-btn" data-user-id="{{ user.id }}">
+                                Afficher/Masquer
+                            </button>
+                        </div>
+                        <div class="card-body user-details" id="user-details-{{ user.id }}">
+                            {% set groupedWorks = {} %}
+                            {# Grouper les "works" par mois/année #}
+                            {% for work in user.works %}
+                                {% set key = work.date|date('Y-m') %}
+                                {% if groupedWorks[key] is not defined %}
+                                    {% set groupedWorks = groupedWorks|merge({ (key): [work] }) %}
                                 {% else %}
-                                    {# Trier les mois par ordre chronologique inverse #}
-                                    {% set sortedGroupedWorks = groupedWorks|keys|sort((a, b) => b <=> a) %}
-
-                                    {% for key in sortedGroupedWorks %}
-                                        {% set year = key|split('-')[0] %}
-                                        {% set month = key|split('-')[1] %}
-                                        {% set monthName = (year ~ '-' ~ month ~ '-01')|date('F') %}
-                                        <div class="month-block mt-4">
-                                            <h5 class="month-title">{{ monthName|trans|capitalize }} {{ year }}</h5>
-                                            <table class="table table-bordered table-striped table-sm mt-2">
-                                                <thead class="table-light">
-                                                <tr>
-                                                    <th>Date</th>
-                                                    <th>Début</th>
-                                                    <th>Pause</th>
-                                                    <th>Fin</th>
-                                                    <th>Durée nette</th>
-                                                </tr>
-                                                </thead>
-                                                <tbody>
-                                                {% set totalNet = 0 %}
-                                                {% for work in groupedWorks[key]|sort((a, b) => b.date <=> a.date) %}
-                                                    {% set start = work.startTime.timestamp %}
-                                                    {% set end = work.endTime.timestamp %}
-                                                    {% set pause = 0 %}
-                                                    {% if work.pauseStart and work.pauseEnd %}
-                                                        {% set pause = work.pauseEnd.timestamp - work.pauseStart.timestamp %}
-                                                    {% endif %}
-                                                    {% set net = (end - start - pause) // 60 %}
-                                                    {% set totalNet = totalNet + net %}
-                                                    <tr>
-                                                        <td>{{ work.date|date('d/m/Y') }}</td>
-                                                        <td>{{ work.startTime|date('H:i') }}</td>
-                                                        <td>
-                                                            {% if work.pauseStart and work.pauseEnd %}
-                                                                {{ work.pauseStart|date('H:i') }} - {{ work.pauseEnd|date('H:i') }}
-                                                            {% else %}
-                                                                <span class="text-muted">Aucune</span>
-                                                            {% endif %}
-                                                        </td>
-                                                        <td>{{ work.endTime|date('H:i') }}</td>
-                                                        <td>{{ (net // 60) }}h {{ (net % 60) }}min</td>
-                                                    </tr>
-                                                {% endfor %}
-                                                </tbody>
-                                                <div class="text-end mt-2">
-                                                    <a href="{{ path('app_admin_export', {
-                                                        userId: user.id,
-                                                        year: year,
-                                                        month: month
-                                                    }) }}"
-                                                       class="btn btn-sm btn-outline-primary"
-                                                       target="_blank">
-                                                        📄 Exporter le PDF
-                                                    </a>
-                                                </div>
-
-                                                <tfoot>
-                                                <tr class="table-success">
-                                                    <th colspan="4" class="text-end">Total du mois :</th>
-                                                    <th>{{ (totalNet // 60) }}h {{ (totalNet % 60) }}min</th>
-                                                </tr>
-                                                </tfoot>
-                                            </table>
-                                        </div>
-                                    {% endfor %}
+                                    {% set groupedWorks = groupedWorks|merge({ (key): groupedWorks[key]|merge([work]) }) %}
                                 {% endif %}
-                            </div>
+                            {% endfor %}
+                            {% if groupedWorks is empty %}
+                                <p class="no-data">Aucune donnée disponible.</p>
+                            {% else %}
+                                {# Trier les mois par ordre chronologique inverse #}
+                                {% set sortedGroupedWorks = groupedWorks|keys|sort((a, b) => b <=> a) %}
+                                {% for key in sortedGroupedWorks %}
+                                    {% set year = key|split('-')[0] %}
+                                    {% set month = key|split('-')[1] %}
+                                    {% set monthName = (year ~ '-' ~ month ~ '-01')|date('F') %}
+                                    <div class="export-link">
+                                        <a href="{{ path('app_admin_export', {
+                                            userId: user.id,
+                                            year: year,
+                                            month: month
+                                        }) }}" target="_blank">
+                                            📄 Exporter le PDF
+                                        </a>
+                                    </div>
+                                    <div class="month-block">
+                                        <h5 class="month-title">{{ monthName|trans|capitalize }} {{ year }}</h5>
+                                        <table class="data-table">
+                                            <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Début</th>
+                                                <th>Pause</th>
+                                                <th>Fin</th>
+                                                <th>Transports</th>
+                                                <th>Durée nette</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% set totalNet = 0 %}
+                                            {% set totalTransports = 0 %}
+                                            {% for work in groupedWorks[key]|sort((a, b) => b.date <=> a.date) %}
+                                                {% set start = work.startTime.timestamp %}
+                                                {% set end = work.endTime.timestamp %}
+                                                {% set pause = 0 %}
+                                                {% if work.pauseStart and work.pauseEnd %}
+                                                    {% set pause = work.pauseEnd.timestamp - work.pauseStart.timestamp %}
+                                                {% endif %}
+                                                {% set net = (end - start - pause) // 60 %}
+                                                {% set totalNet = totalNet + net %}
+                                                {% set totalTransports = totalTransports + work.numberOfTransport %}
+                                                <tr>
+                                                    <td data-label="Date">{{ work.date|date('d/m/Y') }}</td>
+                                                    <td data-label="Début">{{ work.startTime|date('H:i') }}</td>
+                                                    <td data-label="Pause">
+                                                        {% if work.pauseStart and work.pauseEnd %}
+                                                            {{ work.pauseStart|date('H:i') }} - {{ work.pauseEnd|date('H:i') }}
+                                                        {% else %}
+                                                            <span class="no-data">Aucune</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td data-label="Fin">{{ work.endTime|date('H:i') }}</td>
+                                                    <td data-label="Transports">{{ work.numberOfTransport }}</td>
+                                                    <td data-label="Durée nette">{{ (net // 60) }}h {{ (net % 60) }}min</td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                            <tfoot>
+                                            <tr>
+                                                <th colspan="4" class="footer-total">Total du mois :</th>
+                                                <th>{{ totalTransports }}</th>
+                                                <th>{{ (totalNet // 60) }}h {{ (totalNet % 60) }}min</th>
+                                            </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
                         </div>
                     </div>
                 {% endif %}
@@ -110,123 +106,183 @@
     <style>
         /* Global Styles */
         body {
-            font-family: 'Arial', sans-serif;
+            margin: 0;
+            font-family: Arial, sans-serif;
             background-color: #f4f4f4;
             color: #333;
         }
-
-        .container {
+        a {
+            text-decoration: none;
+            cursor: pointer;
+        }
+        /* Admin Container */
+        .admin-container {
             max-width: 1200px;
-            margin: 0 auto;
+            margin: 20px auto;
             padding: 20px;
         }
-
-        h1, h2, h3, h4, h5, h6 {
+        .logout-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 8px 16px;
+            background-color: #ee0000;
+            color: #fff;
+            border-radius: 25px;
+            transition: background-color 0.3s;
+        }
+        .logout-link:hover {
+            background-color: #cc1010;
+        }
+        .page-title {
+            font-size: 1.8rem;
             color: #003c8c;
+            margin-bottom: 20px;
         }
-
-        /* Card Styles */
-        .card {
-            border: none;
+        /* Users Grid */
+        .users-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .user-card {
+            flex: 1 1 calc(33.333% - 20px);
+            background-color: #fff;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
         }
-
-        .card:hover {
+        .user-card:hover {
             transform: translateY(-5px);
         }
-
         .card-header {
-            background-color: rgba(136, 132, 122, 0.45);
-            border-bottom: none;
+            background-color: #0d6efd;
+            color: #fff;
+            padding: 15px;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-
-        .card-header h4 {
+        .user-name {
             margin: 0;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
         }
-
+        .toggle-user-btn {
+            background-color: #fff;
+            color: #0d6efd;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .toggle-user-btn:hover {
+            background-color: #e0e0e0;
+        }
         .card-body {
-            padding: 20px;
+            padding: 15px;
+            display: none;
         }
-
-        /* Table Styles */
-        .table {
-            width: 100%;
-            margin-bottom: 1rem;
-            background-color: #fff;
-            border-collapse: collapse;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .table th, .table td {
-            padding: 12px;
-            text-align: left;
-            border: 1px solid #dee2e6;
-        }
-
-        .table thead th {
-            background-color: #f1f1f1;
-            font-weight: bold;
-        }
-
-        .table tbody tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-
-        .table tfoot th {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        /* Month Block Styles */
+        /* Month Block */
         .month-block {
-            background-color: #fff;
-            padding: 20px;
+            background-color: #fefefe;
+            padding: 15px;
+            margin-bottom: 20px;
             border-left: 5px solid #0d6efd;
             border-bottom: 5px solid #0d6efd;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-
         .month-title {
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             color: #0d6efd;
             margin-bottom: 10px;
         }
-
-        /* Button Styles */
-        .btn {
+        /* Data Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        .data-table th, .data-table td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #dee2e6;
+        }
+        .data-table thead th {
+            background-color: #f1f1f1;
+            font-weight: bold;
+        }
+        .data-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .footer-total {
+            text-align: right;
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .export-link {
+            text-align: right;
+            margin-top: 10px;
+        }
+        .export-link a {
+            display: inline-block;
+            padding: 6px 12px;
+            border: 1px solid #0d6efd;
             border-radius: 25px;
-            padding: 8px 16px;
-            font-size: 0.9rem;
+            color: #0d6efd;
             transition: background-color 0.3s, color 0.3s;
         }
-
-        .btn-outline-primary {
-            border-color: #0d6efd;
-            color: #0d6efd;
-        }
-
-        .btn-outline-primary:hover {
+        .export-link a:hover {
             background-color: #0d6efd;
             color: #fff;
         }
-
         /* Responsive Styles */
-        @media (max-width: 768px) {
-            .card {
-                margin-bottom: 20px;
+        @media (max-width: 1024px) {
+            .user-card {
+                flex: 1 1 calc(50% - 20px);
             }
-
-            .table th, .table td {
-                padding: 10px;
+        }
+        @media (max-width: 768px) {
+            .users-grid {
+                flex-direction: column;
+            }
+            .user-card {
+                flex: 1 1 100%;
+            }
+        }
+        /* Responsive Table for very small screens */
+        @media (max-width: 480px) {
+            .data-table, .data-table thead, .data-table tbody, .data-table th, .data-table td, .data-table tr {
+                display: block;
+            }
+            .data-table thead {
+                display: none;
+            }
+            .data-table tr {
+                margin-bottom: 15px;
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+            .data-table td {
+                text-align: right;
+                padding-left: 50%;
+                position: relative;
+            }
+            .data-table td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 10px;
+                width: calc(50% - 20px);
+                text-align: left;
+                font-weight: bold;
             }
         }
     </style>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const toggleButtons = document.querySelectorAll('.toggle-user-btn');
@@ -239,7 +295,7 @@
                         this.textContent = 'Masquer';
                     } else {
                         userDetails.style.display = 'none';
-                        this.textContent = 'Afficher';
+                        this.textContent = 'Afficher/Masquer';
                     }
                 });
             });
