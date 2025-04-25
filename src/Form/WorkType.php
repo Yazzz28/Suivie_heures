@@ -14,18 +14,23 @@ class WorkType extends AbstractType
         $builder
             ->add('date', null, [
                 'widget' => 'single_text',
+                'label' => 'Date',
             ])
             ->add('startTime', null, [
                 'widget' => 'single_text',
+                'label' => 'Heure de début',
             ])
             ->add('pauseStart', null, [
                 'widget' => 'single_text',
+                'label' => 'Heure de pause',
             ])
             ->add('pauseEnd', null, [
                 'widget' => 'single_text',
+                'label' => 'Heure de reprise',
             ])
             ->add('endTime', null, [
                 'widget' => 'single_text',
+                'label' => 'Heure de fin',
             ])
             ->add('numberOfTransport', null, [
                 'label' => 'Nombre de transports',

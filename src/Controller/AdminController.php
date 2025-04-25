@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Repository\UserRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Dompdf\Dompdf;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -72,5 +73,21 @@ final class AdminController extends AbstractController
                 'Content-Disposition' => 'inline; filename="'.$filename.'"',
             ]
         );
+    }
+
+    #[Route('/admin/delete/{userId}', name: 'app_admin_delete')]
+    public function deleteUser(
+        int $userId,
+        UserRepository $userRepository,
+        EntityManagerInterface $entityManager
+    ): Response {
+        $user = $userRepository->find($userId);
+        if (!$user) {
+            throw $this->createNotFoundException('Utilisateur non trouvé');
+        }
+        $entityManager->remove($user);
+        $entityManager->flush();
+
+        return $this->redirectToRoute('app_admin');
     }
 }
