@@ -44,14 +44,16 @@
             font-weight: bold;
         }
         .day-of {
-            background-color: #fff3cd !important; /* orange pâle */
+            background-color: #fff3cd !important;
         }
-
         .day-of-without-solde {
-            background-color: #f8d7da !important; /* rouge pâle */
+            background-color: #f8d7da !important;
         }
-
         .total-row td {
+            font-weight: bold;
+        }
+        .weekly-total {
+            background-color: #d1ecf1;
             font-weight: bold;
         }
     </style>
@@ -83,7 +85,24 @@
     <tbody>
     {% set totalNet = 0 %}
     {% set totalTransports = 0 %}
+    {% set previousWeek = null %}
+    {% set weekNet = 0 %}
+    {% set weekTransports = 0 %}
+
     {% for work in works|sort((a, b) => a.date <=> b.date) %}
+        {% set currentWeek = work.date|date('o-W') %}
+
+        {# Si changement de semaine ET ce n'est pas la première entrée #}
+        {% if previousWeek is not null and previousWeek != currentWeek %}
+            <tr class="weekly-total">
+                <td colspan="4" style="text-align: right;">Total semaine {{ previousWeek|split('-')[1] }}</td>
+                <td>{{ weekTransports }}</td>
+                <td>{{ (weekNet // 60) }}h {{ (weekNet % 60) }}min</td>
+            </tr>
+            {% set weekNet = 0 %}
+            {% set weekTransports = 0 %}
+        {% endif %}
+
         {% set start = work.startTime is not null ? work.startTime.timestamp : 0 %}
         {% set end = work.endTime is not null ? work.endTime.timestamp : 0 %}
         {% set pause = 0 %}
@@ -93,13 +112,16 @@
         {% set net = (end - start - pause) // 60 %}
         {% set totalNet = totalNet + net %}
         {% set totalTransports = totalTransports + work.numberOfTransport %}
+        {% set weekNet = weekNet + net %}
+        {% set weekTransports = weekTransports + work.numberOfTransport %}
+
         <tr class="
             {% if work.dayOf %} day-of
             {% elseif work.dayOfWhitoutSolde %} day-of-without-solde
             {% endif %}
         ">
-        <td>{{ work.date|date('d/m/Y') }}</td>
-            <td>{{ work.startTime|date('H:i') }}</td>
+            <td>{{ work.date|date('d/m/Y') }}</td>
+            <td>{{ work.startTime ? work.startTime|date('H:i') : '-' }}</td>
             <td>
                 {% if work.pauseStart and work.pauseEnd %}
                     {{ work.pauseStart|date('H:i') }} - {{ work.pauseEnd|date('H:i') }}
@@ -107,11 +129,22 @@
                     -
                 {% endif %}
             </td>
-            <td>{{ work.endTime|date('H:i') }}</td>
+            <td>{{ work.endTime ? work.endTime|date('H:i') : '-' }}</td>
             <td>{{ work.numberOfTransport }}</td>
             <td>{{ (net // 60) }}h {{ (net % 60) }}min</td>
         </tr>
+
+        {% set previousWeek = currentWeek %}
     {% endfor %}
+
+    {# Dernier total de semaine (après la boucle) #}
+    {% if previousWeek is not null %}
+        <tr class="weekly-total">
+            <td colspan="4" style="text-align: right;">Total semaine {{ previousWeek|split('-')[1] }}</td>
+            <td>{{ weekTransports }}</td>
+            <td>{{ (weekNet // 60) }}h {{ (weekNet % 60) }}min</td>
+        </tr>
+    {% endif %}
     </tbody>
     <tfoot>
     <tr class="total-row">
