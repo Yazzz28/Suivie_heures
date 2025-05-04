@@ -1,5 +1,7 @@
 {% extends 'base.html.twig' %}
+
 {% block title %}Panel Admin - Heures des employés{% endblock %}
+
 {% block body %}
     <div class="admin-container">
         <a href="{{ path('app_logout') }}" class="logout-link">Se déconnecter</a>
@@ -22,7 +24,7 @@
                         </div>
                         <div class="card-body user-details" id="user-details-{{ user.id }}">
                             {% set groupedWorks = {} %}
-                            {# Grouper les "works" par mois/année #}
+                            {# Grouper les works par mois/année #}
                             {% for work in user.works %}
                                 {% set key = work.date|date('Y-m') %}
                                 {% set groupedWorks = groupedWorks|merge({
@@ -33,7 +35,6 @@
                             {% if groupedWorks is empty %}
                                 <p class="no-data">Aucune donnée disponible.</p>
                             {% else %}
-                                {# Trier les mois par ordre chronologique inverse #}
                                 {% set sortedGroupedWorks = groupedWorks|keys|sort|reverse %}
                                 {% for key in sortedGroupedWorks %}
                                     {% set parts = key|split('-') %}
@@ -42,16 +43,12 @@
                                     {% set monthName = (year ~ '-' ~ month ~ '-01')|date('F') %}
                                     <div class="month-block">
                                         <div class="export-link">
-                                            <a href="{{ path('app_admin_export', {
-                                                userId: user.id,
-                                                year: year,
-                                                month: month
-                                            }) }}" target="_blank">
+                                            <a href="{{ path('app_admin_export', { userId: user.id, year: year, month: month }) }}" target="_blank">
                                                 📄 Exporter le PDF
                                             </a>
                                         </div>
                                         <h5 class="month-title">{{ monthName|trans|capitalize }} {{ year }}</h5>
-                                        <button class="sort-toggle-btn" data-target="month-{{ key }}">Trier par date ↓</button>
+                                        <button class="sort-toggle-btn" data-target="month-{{ key }}" data-key="{{ key }}">Trier par date ↓</button>
                                         <table class="data-table">
                                             <thead>
                                             <tr>
@@ -66,13 +63,13 @@
                                             <tbody id="month-{{ key }}">
                                             {% set totalNet = 0 %}
                                             {% set totalTransports = 0 %}
-                                            {% for work in groupedWorks[key]|sort((a, b) => b.date <=> a.date) %}
-                                                {% set start = work.startTime ? work.startTime.timestamp : 0 %}
-                                                {% set end = work.endTime ? work.endTime.timestamp : 0 %}
+                                            {% for work in groupedWorks[key]|sort((a,b)=>b.date<=>a.date) %}
+                                                {% set start = work.startTime? work.startTime.timestamp:0 %}
+                                                {% set end   = work.endTime?   work.endTime.timestamp:0 %}
                                                 {% set pause = (work.pauseStart and work.pauseEnd)
-                                                    ? work.pauseEnd.timestamp - work.pauseStart.timestamp
+                                                    ? work.pauseEnd.timestamp-work.pauseStart.timestamp
                                                     : 0 %}
-                                                {% set net = (end - start - pause) // 60 %}
+                                                {% set net   = (end-start-pause)//60 %}
                                                 {% set totalNet = totalNet + net %}
                                                 {% set totalTransports = totalTransports + work.numberOfTransport %}
                                                 <tr class="{% if work.dayOf %}day-of{% elseif work.dayOfWhitoutSolde %}day-of-without-solde{% endif %}">
@@ -81,13 +78,11 @@
                                                     <td data-label="Pause">
                                                         {% if work.pauseStart and work.pauseEnd %}
                                                             {{ work.pauseStart|date('H:i') }} - {{ work.pauseEnd|date('H:i') }}
-                                                        {% else %}
-                                                            <span class="no-data">Aucune</span>
-                                                        {% endif %}
+                                                        {% else %}<span class="no-data">Aucune</span>{% endif %}
                                                     </td>
                                                     <td data-label="Fin">{{ work.endTime|date('H:i') }}</td>
                                                     <td data-label="Transports">{{ work.numberOfTransport }}</td>
-                                                    <td data-label="Durée nette">{{ (net // 60) }}h {{ (net % 60) }}min</td>
+                                                    <td data-label="Durée nette">{{ (net//60) }}h {{ (net%60) }}min</td>
                                                 </tr>
                                             {% endfor %}
                                             </tbody>
@@ -95,41 +90,43 @@
                                             <tr>
                                                 <th colspan="4" class="footer-total">Total du mois :</th>
                                                 <th>{{ totalTransports }}</th>
-                                                <th>{{ (totalNet // 60) }}h {{ (totalNet % 60) }}min</th>
+                                                <th>{{ (totalNet//60) }}h {{ (totalNet%60) }}min</th>
                                             </tr>
                                             </tfoot>
                                         </table>
 
-                                        {# --- Total par semaine --- #}
+                                        {# Nombre de jours travaillés (exclut congés payés et sans solde) #}
+                                        {% set workedDays = 0 %}
+                                        {% for work in groupedWorks[key] %}
+                                            {% if not work.dayOf and not work.dayOfWhitoutSolde %}
+                                                {% set workedDays = workedDays + 1 %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        <div class="monthly-days">
+                                            <strong>Jours travaillés :</strong> {{ workedDays }}
+                                        </div>
+
+                                        {# Total par semaine #}
                                         {% set weeklyGroups = {} %}
                                         {% for work in groupedWorks[key] %}
                                             {% set wk = work.date|date('o-W') %}
-                                            {% set weeklyGroups = weeklyGroups|merge({
-                                                (wk): (weeklyGroups[wk] is defined ? weeklyGroups[wk]|merge([work]) : [work])
-                                            }) %}
+                                            {% set weeklyGroups = weeklyGroups|merge({ (wk): (weeklyGroups[wk] is defined ? weeklyGroups[wk]|merge([work]) : [work]) }) %}
                                         {% endfor %}
                                         <div class="weekly-totals">
                                             <h6>Total par semaine</h6>
                                             <ul>
-                                                {% for wk in weeklyGroups|keys %}
-                                                    {% set worksWeek = weeklyGroups[wk] %}
-                                                    {% set totalNetW = 0 %}
-                                                    {% set totalTransW = 0 %}
-                                                    {% for w in worksWeek %}
-                                                        {% set s = w.startTime ? w.startTime.timestamp : 0 %}
-                                                        {% set e = w.endTime   ? w.endTime.timestamp   : 0 %}
-                                                        {% set p = (w.pauseStart and w.pauseEnd)
-                                                            ? w.pauseEnd.timestamp - w.pauseStart.timestamp
-                                                            : 0 %}
-                                                        {% set netW = (e - s - p) // 60 %}
-                                                        {% set totalNetW   = totalNetW   + netW %}
+                                                {% for wk in weeklyGroups|keys|sort|reverse %}
+                                                    {% set totalNetW=0 %}
+                                                    {% set totalTransW=0 %}
+                                                    {% for w in weeklyGroups[wk] %}
+                                                        {% set s= w.startTime? w.startTime.timestamp:0 %}
+                                                        {% set e= w.endTime?   w.endTime.timestamp:0 %}
+                                                        {% set p= (w.pauseStart and w.pauseEnd)? w.pauseEnd.timestamp-w.pauseStart.timestamp:0 %}
+                                                        {% set netW=(e-s-p)//60 %}
+                                                        {% set totalNetW = totalNetW + netW %}
                                                         {% set totalTransW = totalTransW + w.numberOfTransport %}
                                                     {% endfor %}
-                                                    <li>
-                                                        Semaine {{ wk|split('-')[1] }} :
-                                                        {{ (totalNetW // 60) }}h {{ (totalNetW % 60) }}min —
-                                                        Transports : {{ totalTransW }}
-                                                    </li>
+                                                    <li>Semaine {{ wk|split('-')[1] }} : {{ (totalNetW//60) }}h {{ (totalNetW%60) }}min — Transports : {{ totalTransW }}</li>
                                                 {% endfor %}
                                             </ul>
                                         </div>
@@ -213,10 +210,11 @@
                     btn.textContent = show ? 'Masquer' : 'Afficher/Masquer';
                 });
             });
-            // Tri par date
+            // Tri persistant par date
             document.querySelectorAll('.sort-toggle-btn').forEach(btn => {
-                let asc = false;
-                btn.addEventListener('click', () => {
+                const key = btn.dataset.key;
+                let asc = localStorage.getItem(`sort_${key}`) === 'asc';
+                const sortTable = () => {
                     const tbody = document.getElementById(btn.dataset.target);
                     const rows = Array.from(tbody.querySelectorAll('tr'));
                     rows.sort((a, b) => {
@@ -226,8 +224,13 @@
                         return asc ? da - db : db - da;
                     });
                     rows.forEach(r => tbody.appendChild(r));
-                    asc = !asc;
                     btn.textContent = `Trier par date ${asc ? '↑' : '↓'}`;
+                };
+                sortTable();
+                btn.addEventListener('click', () => {
+                    asc = !asc;
+                    localStorage.setItem(`sort_${key}`, asc ? 'asc' : 'desc');
+                    sortTable();
                 });
             });
         });

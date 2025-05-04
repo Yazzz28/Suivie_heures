@@ -56,6 +56,10 @@
             background-color: #d1ecf1;
             font-weight: bold;
         }
+        .monthly-days {
+            font-weight: bold;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -88,11 +92,12 @@
     {% set previousWeek = null %}
     {% set weekNet = 0 %}
     {% set weekTransports = 0 %}
+    {% set workedDays = 0 %}
 
     {% for work in works|sort((a, b) => a.date <=> b.date) %}
         {% set currentWeek = work.date|date('o-W') %}
 
-        {# Si changement de semaine ET ce n'est pas la première entrée #}
+        {# Afficher total semaine #}
         {% if previousWeek is not null and previousWeek != currentWeek %}
             <tr class="weekly-total">
                 <td colspan="4" style="text-align: right;">Total semaine {{ previousWeek|split('-')[1] }}</td>
@@ -114,6 +119,11 @@
         {% set totalTransports = totalTransports + work.numberOfTransport %}
         {% set weekNet = weekNet + net %}
         {% set weekTransports = weekTransports + work.numberOfTransport %}
+
+        {# Compter uniquement les jours travaillés #}
+        {% if not work.dayOf and not work.dayOfWhitoutSolde %}
+            {% set workedDays = workedDays + 1 %}
+        {% endif %}
 
         <tr class="
             {% if work.dayOf %} day-of
@@ -137,7 +147,7 @@
         {% set previousWeek = currentWeek %}
     {% endfor %}
 
-    {# Dernier total de semaine (après la boucle) #}
+    {# Dernier total de semaine #}
     {% if previousWeek is not null %}
         <tr class="weekly-total">
             <td colspan="4" style="text-align: right;">Total semaine {{ previousWeek|split('-')[1] }}</td>
@@ -154,5 +164,9 @@
     </tr>
     </tfoot>
 </table>
+
+<div class="monthly-days">
+    Nombre de jours travaillés : {{ workedDays }}
+</div>
 </body>
 </html>
