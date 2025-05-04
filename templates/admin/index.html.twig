@@ -98,7 +98,7 @@
                                         {# Nombre de jours travaillés (exclut congés payés et sans solde) #}
                                         {% set workedDays = 0 %}
                                         {% for work in groupedWorks[key] %}
-                                            {% if not work.dayOf and not work.dayOfWhitoutSolde %}
+                                            {% if not work.dayOf and not work.dayOfWhitoutSolde and not work.isPublicHolidays %}
                                                 {% set workedDays = workedDays + 1 %}
                                             {% endif %}
                                         {% endfor %}

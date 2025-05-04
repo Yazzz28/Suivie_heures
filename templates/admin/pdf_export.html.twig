@@ -124,7 +124,7 @@
         {% set weekTransports = weekTransports + work.numberOfTransport %}
 
         {# Compter uniquement les jours travaillés #}
-        {% if not work.dayOf and not work.dayOfWhitoutSolde %}
+        {% if not work.dayOf and not work.dayOfWhitoutSolde and not work.isPublicHolidays %}
             {% set workedDays = workedDays + 1 %}
         {% endif %}
 
