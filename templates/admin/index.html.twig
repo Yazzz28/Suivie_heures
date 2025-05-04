@@ -197,6 +197,69 @@
         .weekly-totals h6 { margin: 0 0 8px; font-size: 1rem; color: #0d6efd; }
         .weekly-totals ul { list-style: none; padding: 0; margin: 0; }
         .weekly-totals li { margin-bottom: 4px; font-size: 0.9rem; }
+        /* Vue mobile pour le panel admin */
+        @media (max-width: 768px) {
+            .users-grid {
+                flex-direction: column;
+            }
+            .user-card {
+                flex: 1 1 100%;
+                margin: 0 0 20px;
+            }
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .toggle-user-btn, .delete-user-btn {
+                margin-top: 10px;
+            }
+        }
+
+        /* Détail des heures : transformation de la table en blocks */
+        @media (max-width: 480px) {
+            .data-table, .data-table thead, .data-table tbody,
+            .data-table th, .data-table td, .data-table tr {
+                display: block;
+            }
+            .data-table thead {
+                display: none;
+            }
+            .data-table tr {
+                margin-bottom: 15px;
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+                padding: 10px;
+            }
+            .data-table td {
+                position: relative;
+                padding-left: 50%;
+                text-align: left;
+            }
+            .data-table td::before {
+                position: absolute;
+                left: 10px;
+                width: 45%;
+                white-space: nowrap;
+                font-weight: bold;
+            }
+            /* Définition des labels pour chaque colonne */
+            .data-table td:nth-of-type(1)::before { content: "Date"; }
+            .data-table td:nth-of-type(2)::before { content: "Début"; }
+            .data-table td:nth-of-type(3)::before { content: "Pause"; }
+            .data-table td:nth-of-type(4)::before { content: "Fin"; }
+            .data-table td:nth-of-type(5)::before { content: "Transports"; }
+            .data-table td:nth-of-type(6)::before { content: "Durée nette"; }
+
+            /* Cacher le pied de table (totaux) sur mobile ou le déplacer */
+            .data-table tfoot {
+                display: none;
+            }
+            /* Afficher les totaux sous forme de block */
+            .monthly-days, .weekly-totals {
+                font-size: 0.9rem;
+                padding: 10px;
+            }
+        }
     </style>
 
     <script>

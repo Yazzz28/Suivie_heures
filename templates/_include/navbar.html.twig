@@ -1,0 +1,55 @@
+<nav class="navbar">
+    <div class="container">
+        <a class="navbar-brand" href="{{ path('app_login') }}">Bienvenu</a>
+
+        <ul class="nav">
+            <li class="nav-item">
+                <a class="nav-link{% if app.request.get('_route') starts with 'app_login' %} active{% endif %}" href="{{ path('app_login') }}">
+                    Accueil
+                </a>
+            </li>
+            {% if app.user %}
+            <li class="nav-item">
+                <a class="nav-link{% if app.request.get('_route') starts with 'app_work_' %} active{% endif %}" href="{{ path('app_work_index', {'id': app.user.id}) }}">
+                    Mes heures
+                </a>
+            </li>
+            {% endif %}
+
+            {# Admin menu #}
+            {% if is_granted('ROLE_ADMIN') %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="{{ path('app_admin') }}" id="adminMenu" data-bs-toggle="dropdown">
+                        Administration
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+
+        <ul class="nav ms-auto">
+            {% if app.user %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ path('app_logout') }}">Se déconnecter</a>
+                </li>
+            {% else %}
+                <li class="nav-item">
+                    <a class="nav-link{% if app.request.get('_route') == 'app_login' %} active{% endif %}" href="{{ path('app_login') }}">Connexion</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link{% if app.request.get('_route') == 'app_register' %} active{% endif %}" href="{{ path('app_register') }}">Inscription</a>
+                </li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>
+<style>
+    .navbar { background: #0d6efd; padding: 0.5rem 1rem; }
+    .navbar-brand { color: #fff; font-weight: bold; }
+    .nav { list-style: none; margin: 0; padding: 0; display: flex; gap: 1rem; }
+    .nav-item { }
+    .nav-link { color: #f8f9fa; text-decoration: none; }
+    .nav-link.active, .nav-link:hover { color: #fff; border-bottom: 2px solid #fff; }
+    .dropdown-menu { background: #fff; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15); }
+    .dropdown-item { color: #333; }
+    .dropdown-item:hover { background: #f1f1f1; }
+</style>
