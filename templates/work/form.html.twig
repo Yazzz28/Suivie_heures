@@ -14,6 +14,7 @@
         <div class="form-group form-conges">
             <div style="display: inline-block; width: 49%;">{{ form_row(form.dayOf) }}</div>
             <div style="display: inline-block; width: 49%;">{{ form_row(form.dayOfWhitoutSolde) }}</div>
+            <div style="display: inline-block; width: 49%;">{{ form_row(form.isPublicHolidays) }}</div>
         </div>
         <div id="hour-fields">
             <div class="form-group">{{ form_row(form.startTime) }}</div>
@@ -123,15 +124,17 @@
         document.addEventListener('DOMContentLoaded', function () {
             const dayOf = document.querySelector('#{{ form.dayOf.vars.id }}');
             const dayOfWithoutSolde = document.querySelector('#{{ form.dayOfWhitoutSolde.vars.id }}');
+            const holiday = document.querySelector('#{{ form.isPublicHolidays.vars.id }}');
             const hourFields = document.getElementById('hour-fields');
 
             function toggleHourFields() {
-                const isOnLeave = dayOf.checked || dayOfWithoutSolde.checked;
+                const isOnLeave = dayOf.checked || dayOfWithoutSolde.checked || holiday.checked;
                 hourFields.style.display = isOnLeave ? 'none' : 'block';
             }
 
             dayOf.addEventListener('change', toggleHourFields);
             dayOfWithoutSolde.addEventListener('change', toggleHourFields);
+            holiday.addEventListener('change', toggleHourFields);
 
             // Initial check on page load
             toggleHourFields();

@@ -52,7 +52,7 @@ final class WorkController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $work->setUser($this->getUser());
-            if ($work->getDayOf()) {
+            if ($work->getDayOf() || $work->getIsPublicHolidays()) {
                 $work->setStartTime(new DateTime('09:00'));
                 $work->setEndTime(new DateTime('17:00'));
                 $work->setPauseStart(new DateTime('12:00'));
@@ -89,7 +89,7 @@ final class WorkController extends AbstractController
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            if ($work->getDayOf()) {
+            if ($work->getDayOf() || $work->getIsPublicHolidays()) {
                 $work->setStartTime(new DateTime('09:00'));
                 $work->setEndTime(new DateTime('17:00'));
                 $work->setPauseStart(new DateTime('12:00'));

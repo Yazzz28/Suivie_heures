@@ -45,6 +45,9 @@ class Work
     #[ORM\Column(type: 'boolean', nullable: true)]
     private ?bool $dayOfWhitoutSolde = null;
 
+    #[ORM\Column(type: 'boolean', nullable: true)]
+    private ?bool $isPublicHolidays = null;
+
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $comment = null;
 
@@ -96,6 +99,16 @@ class Work
     public function setDayOfWhitoutSolde(?bool $dayOfWhitoutSolde): void
     {
         $this->dayOfWhitoutSolde = $dayOfWhitoutSolde;
+    }
+
+    public function getIsPublicHolidays(): ?bool
+    {
+        return $this->isPublicHolidays;
+    }
+
+    public function setIsPublicHolidays(?bool $isPublicHolidays): void
+    {
+        $this->isPublicHolidays = $isPublicHolidays;
     }
 
     public function getComment(): ?string { return $this->comment; }

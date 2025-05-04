@@ -51,6 +51,12 @@ class WorkType extends AbstractType
                     'type' => 'checkbox',
                 ],
             ])
+            ->add('isPublicHolidays', null, [
+                'label' => 'Férié',
+                'attr' => [
+                    'type' => 'checkbox',
+                ],
+            ])
             ->add('comment',
             null,[
                     'label' => 'Commentaire',

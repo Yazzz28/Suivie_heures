@@ -72,7 +72,7 @@
                                                 {% set net   = (end-start-pause)//60 %}
                                                 {% set totalNet = totalNet + net %}
                                                 {% set totalTransports = totalTransports + work.numberOfTransport %}
-                                                <tr class="{% if work.dayOf %}day-of{% elseif work.dayOfWhitoutSolde %}day-of-without-solde{% endif %}">
+                                                <tr class="{% if work.dayOf %}day-of{% elseif work.dayOfWhitoutSolde %}day-of-without-solde{% elseif work.isPublicHolidays %}public-holiday{% endif %}">
                                                     <td data-label="Date">{{ work.date|date('d/m/Y') }}</td>
                                                     <td data-label="Début">{{ work.startTime|date('H:i') }}</td>
                                                     <td data-label="Pause">
@@ -187,6 +187,7 @@
 
         .day-of { background: #fff3cd !important; }
         .day-of-without-solde { background: #f8d7da !important; }
+        .public-holiday { background: #cce5ff !important; }
 
         .sort-toggle-btn { background: #0d6efd; color: #fff; padding: 5px 10px; border: none;
             border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: .3s; }

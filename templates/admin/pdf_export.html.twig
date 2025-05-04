@@ -49,6 +49,9 @@
         .day-of-without-solde {
             background-color: #f8d7da !important;
         }
+        .public-holiday {
+            background-color: #d1ecf1 !important;
+        }
         .total-row td {
             font-weight: bold;
         }
@@ -125,11 +128,7 @@
             {% set workedDays = workedDays + 1 %}
         {% endif %}
 
-        <tr class="
-            {% if work.dayOf %} day-of
-            {% elseif work.dayOfWhitoutSolde %} day-of-without-solde
-            {% endif %}
-        ">
+        <tr class="{% if work.dayOf %}day-of{% elseif work.dayOfWhitoutSolde %}day-of-without-solde{% elseif work.isPublicHolidays %}public-holiday{% endif %}">
             <td>{{ work.date|date('d/m/Y') }}</td>
             <td>{{ work.startTime ? work.startTime|date('H:i') : '-' }}</td>
             <td>
