@@ -1,5 +1,4 @@
 <?php
-
 namespace App\DataFixtures;
 
 use App\Entity\User;
@@ -7,7 +6,10 @@ use App\Entity\Work;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Faker\Factory;
 use DateTime;
+use DateInterval;
+use DatePeriod;
 
 class AppFixtures extends Fixture
 {
@@ -17,7 +19,7 @@ class AppFixtures extends Fixture
     public function __construct(UserPasswordHasherInterface $passwordHasher)
     {
         $this->passwordHasher = $passwordHasher;
-        $this->faker = \Faker\Factory::create('fr_FR');
+        $this->faker = Factory::create('fr_FR');
     }
 
     public function load(ObjectManager $manager): void
@@ -33,9 +35,9 @@ class AppFixtures extends Fixture
 
         // --- USERS ---
         $users = [];
-        for ($i = 1; $i <= 3; $i++) {
+        for ($i = 1; $i <= 5; $i++) {
             $user = new User();
-            $user->setEmail("user$i@example.com");
+            $user->setEmail("user{$i}@example.com");
             $user->setFirstName($this->faker->firstName());
             $user->setLastName($this->faker->lastName());
             $user->setRoles(['ROLE_USER']);
@@ -44,56 +46,61 @@ class AppFixtures extends Fixture
             $users[] = $user;
         }
 
-        // --- WORK ENTRIES ---
+        // --- WORK ENTRIES FOR EACH USER ---
+        $monthsToGenerate = 3; // Nombre de mois précédents
         foreach ($users as $user) {
-            for ($m = 0; $m < 3; $m++) {
-                $startDate = (new DateTime("first day of -$m month"))->setTime(0, 0);
-                $endDate = (new DateTime("last day of -$m month"))->modify('+1 day');
-
-                $interval = new \DateInterval('P1D');
-                $period = new \DatePeriod($startDate, $interval, $endDate);
+            for ($m = 0; $m < $monthsToGenerate; $m++) {
+                $startDate = (new DateTime("first day of -{$m} month"))->setTime(0, 0);
+                $endDate = (new DateTime("last day of -{$m} month"))->modify('+1 day');
+                $interval = new DateInterval('P1D');
+                $period = new DatePeriod($startDate, $interval, $endDate);
 
                 foreach ($period as $day) {
-                    if (in_array($day->format('N'), [6, 7])) {
+                    // Exclure weekends
+                    if (in_array((int)$day->format('N'), [6, 7])) {
                         continue;
                     }
 
                     $workEntry = new Work();
-                    $date = clone $day;
-
-                    $start = (clone $date)->setTime(rand(7, 9), 0);
-                    $end = (clone $start)->modify('+'.rand(6, 9).' hours');
-
                     $workEntry->setUser($user);
-                    $workEntry->setDate($date);
-                    $workEntry->setStartTime($start);
-                    $workEntry->setEndTime($end);
-                    $workEntry->setComment($this->faker->optional()->sentence());
+                    $workEntry->setDate(clone $day);
 
-                    // Pause aléatoire (50%)
-                    $pauseDuration = 0;
-                    if (rand(0, 1)) {
-                        $pauseStart = (clone $start)->modify('+'.rand(90, 180).' minutes');
+                    // Heures de début entre 7h et 9h
+                    $hourStart = rand(7, 9);
+                    $startTime = (clone $day)->setTime($hourStart, 0);
+
+                    // Durée de travail entre 6 et 9 heures
+                    $duration = rand(6, 9);
+                    $endTime = (clone $startTime)->modify("+{$duration} hours");
+
+                    $workEntry->setStartTime($startTime);
+                    $workEntry->setEndTime($endTime);
+
+                    // Pause aléatoire 50%
+                    if (rand(0, 1) === 1) {
+                        $pauseAfter = rand(90, 180); // minutes après le début
+                        $pauseStart = (clone $startTime)->modify("+{$pauseAfter} minutes");
                         $pauseDuration = rand(15, 60);
-                        $pauseEnd = (clone $pauseStart)->modify("+$pauseDuration minutes");
+                        $pauseEnd = (clone $pauseStart)->modify("+{$pauseDuration} minutes");
 
-                        if ($pauseEnd < $end) {
+                        if ($pauseEnd < $endTime) {
                             $workEntry->setPauseStart($pauseStart);
                             $workEntry->setPauseEnd($pauseEnd);
-                        } else {
-                            $pauseDuration = 0;
                         }
                     }
 
-                    // Transports (0 à 3)
+                    // Nombre de transports entre 0 et 3
                     $workEntry->setNumberOfTransport(rand(0, 3));
 
-                    // Congés
-                    if (rand(0, 20) === 0) {
+                    // Congés payés (1/20) ou sans solde (1/30)
+                    if (rand(1, 20) === 1) {
                         $workEntry->setDayOf(true);
-                    } elseif (rand(0, 30) === 0) {
+                    } elseif (rand(1, 30) === 1) {
                         $workEntry->setDayOfWhitoutSolde(true);
                     }
+
+                    // Commentaire aléatoire
+                    $workEntry->setComment($this->faker->optional(0.7)->sentence());
 
                     $manager->persist($workEntry);
                 }
