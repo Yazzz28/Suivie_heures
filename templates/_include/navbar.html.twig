@@ -2,54 +2,132 @@
     <div class="container">
         <a class="navbar-brand" href="{{ path('app_login') }}">Bienvenu</a>
 
+        <button class="nav-toggle" aria-label="Toggle navigation">
+            ☰
+        </button>
+
         <ul class="nav">
             <li class="nav-item">
-                <a class="nav-link{% if app.request.get('_route') starts with 'app_login' %} active{% endif %}" href="{{ path('app_login') }}">
-                    Accueil
-                </a>
+                <a class="nav-link{% if app.request.get('_route') starts with 'app_login' %} active{% endif %}"
+                   href="{{ path('app_login') }}">Accueil</a>
             </li>
             {% if app.user %}
-            <li class="nav-item">
-                <a class="nav-link{% if app.request.get('_route') starts with 'app_work_' %} active{% endif %}" href="{{ path('app_work_index', {'id': app.user.id}) }}">
-                    Mes heures
-                </a>
-            </li>
+                <li class="nav-item">
+                    <a class="nav-link{% if app.request.get('_route') starts with 'app_work_' %} active{% endif %}"
+                       href="{{ path('app_work_index', {'id': app.user.id}) }}">Mes heures</a>
+                </li>
             {% endif %}
-
-            {# Admin menu #}
             {% if is_granted('ROLE_ADMIN') %}
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="{{ path('app_admin') }}" id="adminMenu" data-bs-toggle="dropdown">
-                        Administration
-                    </a>
+                <li class="nav-item">
+                    <a class="nav-link{% if app.request.get('_route') starts with 'app_admin' %} active{% endif %}"
+                       href="{{ path('app_admin') }}">Administration</a>
                 </li>
             {% endif %}
         </ul>
 
-        <ul class="nav ms-auto">
+        <ul class="nav auth-nav">
             {% if app.user %}
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ path('app_logout') }}">Se déconnecter</a>
+                    <a class="nav-link btn-logout" href="{{ path('app_logout') }}">Se déconnecter</a>
                 </li>
             {% else %}
                 <li class="nav-item">
-                    <a class="nav-link{% if app.request.get('_route') == 'app_login' %} active{% endif %}" href="{{ path('app_login') }}">Connexion</a>
+                    <a class="nav-link{% if app.request.get('_route') == 'app_login' %} active{% endif %}"
+                       href="{{ path('app_login') }}">Connexion</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link{% if app.request.get('_route') == 'app_register' %} active{% endif %}" href="{{ path('app_register') }}">Inscription</a>
+                    <a class="nav-link{% if app.request.get('_route') == 'app_register' %} active{% endif %}"
+                       href="{{ path('app_register') }}">Inscription</a>
                 </li>
             {% endif %}
         </ul>
     </div>
 </nav>
+
 <style>
-    .navbar { background: #0d6efd; padding: 0.5rem 1rem; }
-    .navbar-brand { color: #fff; font-weight: bold; }
-    .nav { list-style: none; margin: 0; padding: 0; display: flex; gap: 1rem; }
-    .nav-item { }
-    .nav-link { color: #f8f9fa; text-decoration: none; }
-    .nav-link.active, .nav-link:hover { color: #fff; border-bottom: 2px solid #fff; }
-    .dropdown-menu { background: #fff; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15); }
-    .dropdown-item { color: #333; }
-    .dropdown-item:hover { background: #f1f1f1; }
+    /* Base styles */
+    .navbar {
+        background: #0d6efd;
+        padding: 0.5rem 1rem;
+        position: relative;
+    }
+    .container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+    .navbar-brand {
+        color: #fff;
+        font-size: 1.25rem;
+        font-weight: bold;
+    }
+    .nav {
+        list-style: none;
+        display: flex;
+        gap: 1rem;
+        margin: 0;
+        padding: 0;
+    }
+    .nav-item {}
+    .nav-link {
+        color: #f8f9fa;
+        text-decoration: none;
+        padding: 0.5rem 0;
+    }
+    .nav-link.active,
+    .nav-link:hover {
+        color: #fff;
+        border-bottom: 2px solid #fff;
+    }
+    .btn-logout {
+        background: #dc3545;
+        color: #fff;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        text-decoration: none;
+    }
+    .nav-toggle {
+        display: none;
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .nav,
+        .auth-nav {
+            width: 100%;
+            flex-direction: column;
+            display: none;          /* caché par défaut */
+            margin-top: 0.5rem;
+        }
+        .nav-item {
+            margin: 0.5rem 0;
+        }
+        .nav-toggle {
+            display: block;
+        }
+        .nav-toggle.active + .nav,
+        .nav-toggle.active + .nav + .auth-nav {
+            display: flex;          /* affiché quand toggle actif */
+        }
+    }
 </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggle = document.querySelector('.nav-toggle');
+        const nav     = document.querySelector('.nav');
+        const auth    = document.querySelector('.auth-nav');
+
+        toggle.addEventListener('click', () => {
+            toggle.classList.toggle('active');
+            nav.classList.toggle('active');
+            auth.classList.toggle('active');
+        });
+    });
+</script>
