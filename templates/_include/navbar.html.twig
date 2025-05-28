@@ -22,6 +22,10 @@
                     <a class="nav-link{% if app.request.get('_route') starts with 'app_admin' %} active{% endif %}"
                        href="{{ path('app_admin') }}">Administration</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link{% if app.request.get('_route') == 'app_admin_edit_transport' %} active{% endif %}"
+                       href="{{ path('app_admin_edit_transport') }}">Modifier Transport</a>
+                </li>
             {% endif %}
         </ul>
 
