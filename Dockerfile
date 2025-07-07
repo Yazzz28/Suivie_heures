@@ -3,7 +3,7 @@ FROM composer:2 as vendor-builder
 WORKDIR /app
 # Copie seulement les fichiers de dépendances pour profiter du cache Docker
 COPY composer.json composer.lock ./
-RUN composer install --no-scripts --no-autoloader --optimize-autoloader
+RUN composer install --no-scripts --optimize-autoloader
 
 # Étape 2 : Construction de l’image PHP avec les dépendances système
 FROM php:8.2-fpm
@@ -37,13 +37,18 @@ COPY --from=vendor-builder /app/vendor ./vendor
 # Copier le reste des fichiers de l’application
 COPY . .
 
+# Copier le script de démarrage hors du dossier monté par un volume
+COPY start.sh /start.sh
+# Conversion CRLF -> LF pour compatibilité Linux
+RUN apt-get update && apt-get install -y dos2unix && dos2unix /start.sh && apt-get purge -y dos2unix && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+
 # Attribuer les droits (optionnel à laisser dans le container ou gérer via un script de démarrage)
 RUN chown -R www-data:www-data /var/www && chmod -R ug+rwX /var/www
 
 # Rendre le script de démarrage exécutable
-RUN chmod +x ./start.sh
+RUN chmod +x /start.sh
 
 EXPOSE 9000
 
 # Définir le script de démarrage comme point d'entrée
-ENTRYPOINT ["./start.sh"]
+ENTRYPOINT ["/start.sh"]

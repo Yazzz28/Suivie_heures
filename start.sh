@@ -37,9 +37,5 @@ chmod -R ug+rwX var/cache
 echo "📦 Running migrations..."
 php bin/console doctrine:migrations:migrate --no-interaction
 
-# (Optionnel) Installer les dépendances via Composer si nécessaire
-# Note : Il peut être préférable de gérer cela pendant la phase de build.
-composer install --optimize-autoloader
-
 echo "🚀 Starting PHP-FPM..."
 exec php-fpm
