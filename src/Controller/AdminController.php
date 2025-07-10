@@ -13,12 +13,14 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Flex\Options;
+use Dompdf\Options;
 
 #[Route('/admin')]
 #[IsGranted('ROLE_ADMIN')]
 final class AdminController extends AbstractController
 {
+    const USER_NOT_FOUND = 'Utilisateur non trouvé';
+
     #[Route('/', name: 'app_admin')]
     public function index(
         UserRepository $userRepository,
@@ -77,7 +79,7 @@ final class AdminController extends AbstractController
         $user = $userRepository->find($userId);
 
         if (!$user) {
-            throw $this->createNotFoundException('Utilisateur non trouvé');
+            throw $this->createNotFoundException(self::USER_NOT_FOUND);
         }
 
         // Filtrer les entrées de travail pour le mois et l'année donnés
@@ -96,7 +98,7 @@ final class AdminController extends AbstractController
 
         // Configuration de Dompdf
         $options = new Options();
-        $options->get('defaultFont', 'Arial');
+        $options->get('defaultFont');
 
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html);
@@ -129,7 +131,7 @@ final class AdminController extends AbstractController
         $user = $userRepository->find($userId);
 
         if (!$user) {
-            throw $this->createNotFoundException('Utilisateur non trouvé');
+            throw $this->createNotFoundException(self::USER_NOT_FOUND);
         }
 
         // Récupérer la valeur du transport actuelle
@@ -171,7 +173,7 @@ final class AdminController extends AbstractController
 
         // Configuration de Dompdf
         $options = new Options();
-        $options->get('defaultFont', 'Arial');
+        $options->get('defaultFont');
 
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html);
@@ -201,7 +203,7 @@ final class AdminController extends AbstractController
     ): Response {
         $user = $userRepository->find($userId);
         if (!$user) {
-            throw $this->createNotFoundException('Utilisateur non trouvé');
+            throw $this->createNotFoundException(self::USER_NOT_FOUND);
         }
         $entityManager->remove($user);
         $entityManager->flush();

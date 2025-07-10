@@ -21,7 +21,9 @@
 /* ===================================
    1. Reset & Variables CSS
    =================================== */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
@@ -69,8 +71,9 @@
     --space-xl: 2rem;
 
     /* Typographie */
-    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+    --font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, sans-serif;
+    --font-mono: "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
     --line-height: 1.5;
 
     /* Transitions */
@@ -101,7 +104,12 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
     margin: 0 0 var(--space-md);
     font-weight: 600;
     line-height: 1.3;
@@ -143,6 +151,74 @@ ul {
     max-width: var(--max-width);
     margin: 0 auto;
     padding: 0 var(--space-lg);
+}
+
+.reset-password-wrapper {
+    max-width: 420px;
+    margin: var(--space-xl) auto;
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: var(--space-xl) var(--space-lg);
+}
+
+.reset-password-wrapper h1 {
+    text-align: center;
+    color: var(--primary);
+    margin-bottom: var(--space-lg);
+}
+
+.reset-password-wrapper form {
+    background: none;
+    box-shadow: none;
+    padding: 0;
+    max-width: 100%;
+    margin: 0;
+}
+
+.reset-password-wrapper .btn,
+.reset-password-wrapper button {
+    width: 100%;
+    margin-top: var(--space-md);
+}
+
+.reset-password-wrapper .alert {
+    margin-bottom: var(--space-lg);
+}
+
+.reset-password-wrapper .form-group,
+.reset-password-wrapper .form-row,
+.reset-password-wrapper .form-control {
+    margin-bottom: var(--space-lg);
+    width: 100%;
+}
+
+.reset-password-wrapper label {
+    font-weight: 500;
+    color: var(--gray-700);
+    margin-bottom: var(--space-sm);
+    display: block;
+    font-size: 0.9375rem;
+}
+
+.reset-password-wrapper input[type="email"],
+.reset-password-wrapper input[type="password"],
+.reset-password-wrapper input[type="text"] {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius);
+    font-size: 0.9375rem;
+    color: var(--gray-800);
+    background-color: var(--white);
+    transition: all var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.reset-password-wrapper input:focus {
+    border-color: var(--primary-light);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(30, 81, 136, 0.15);
 }
 
 .container-centered {
@@ -216,7 +292,7 @@ ul {
 }
 
 .navbar-brand::before {
-    content: '🚑';
+    content: "🚑";
     margin-right: var(--space-sm);
 }
 
@@ -248,7 +324,7 @@ ul {
 }
 
 .nav-link::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: 0;
     left: 0;
@@ -298,7 +374,11 @@ ul {
     box-shadow: var(--shadow-lg);
 }
 .card-header {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    background: linear-gradient(
+        135deg,
+        var(--primary) 0%,
+        var(--primary-dark) 100%
+    );
     color: var(--white);
     padding: var(--space-md) var(--space-lg);
     border-radius: var(--radius) var(--radius) 0 0;
@@ -374,8 +454,6 @@ ul {
     transform: translateY(-1px);
 }
 
-
-
 .card-body {
     display: none;
     padding: var(--space-lg);
@@ -406,7 +484,7 @@ ul {
 }
 
 .page-title::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: 0;
     left: 0;
@@ -438,7 +516,7 @@ ul {
 }
 
 .month-title::before {
-    content: '📅';
+    content: "📅";
     margin-right: var(--space-sm);
     font-size: 1.25rem;
 }
@@ -595,7 +673,7 @@ ul {
 
 /* Custom checkbox styling */
 .form-check-label::before {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     top: 50%;
@@ -610,7 +688,7 @@ ul {
 
 /* Checkmark */
 .form-check-label::after {
-    content: '';
+    content: "";
     position: absolute;
     left: 0.25rem;
     top: 50%;
@@ -731,7 +809,8 @@ table,
     box-shadow: var(--shadow-sm);
 }
 
-th, td {
+th,
+td {
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--gray-200);
     text-align: left;
@@ -906,7 +985,7 @@ button:active,
 }
 
 .add-work-btn::before {
-    content: '+';
+    content: "+";
     margin-right: var(--space-sm);
     font-weight: 700;
 }
@@ -998,7 +1077,7 @@ button:active,
 }
 
 .back-link::before {
-    content: '←';
+    content: "←";
     position: absolute;
     left: 0.75rem;
     font-size: 1.125rem;
@@ -1033,7 +1112,7 @@ button:active,
 }
 
 .register-link::before {
-    content: '';
+    content: "";
     display: block;
     width: 80%;
     height: 1px;
@@ -1078,7 +1157,7 @@ button:active,
 }
 
 .alert-success::before {
-    content: '✓';
+    content: "✓";
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1097,7 +1176,7 @@ button:active,
 }
 
 .alert-danger::before {
-    content: '!';
+    content: "!";
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1117,7 +1196,7 @@ button:active,
 }
 
 .alert-warning::before {
-    content: '!';
+    content: "!";
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1147,7 +1226,7 @@ button:active,
 }
 
 .info-alert::before {
-    content: 'ℹ️';
+    content: "ℹ️";
     font-size: 1.25rem;
 }
 
@@ -1244,10 +1323,18 @@ button:active,
 /* ===================================
    11. Utilitaires
    =================================== */
-.mb-0 { margin-bottom: 0; }
-.mb-3 { margin-bottom: var(--space-md); }
-.text-center { text-align: center; }
-.hidden { display: none !important; }
+.mb-0 {
+    margin-bottom: 0;
+}
+.mb-3 {
+    margin-bottom: var(--space-md);
+}
+.text-center {
+    text-align: center;
+}
+.hidden {
+    display: none !important;
+}
 
 /* Animations */
 @keyframes fadeIn {

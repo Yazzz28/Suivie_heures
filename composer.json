@@ -26,6 +26,7 @@
         "symfony/stimulus-bundle": "^2.24",
         "symfony/translation": "7.2.*",
         "symfony/twig-bundle": "7.2.*",
+        "symfony/uid": "7.2.*",
         "symfony/validator": "7.2.*",
         "symfony/yaml": "7.2.*",
         "symfonycasts/verify-email-bundle": "^1.17",
