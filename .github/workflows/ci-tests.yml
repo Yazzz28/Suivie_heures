@@ -9,6 +9,7 @@ on:
 jobs:
     test:
         runs-on: ubuntu-latest
+        environment: test  # ← Ajoutez cette ligne
         services:
             mysql:
                 image: mysql:8.0
