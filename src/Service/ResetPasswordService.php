@@ -36,7 +36,7 @@ class ResetPasswordService
         ]);
 
         $emailMessage = (new Email())
-            ->from('no-reply@populaire.com')
+            ->from('no-reply@mennaa-yacine.fr')
             ->to($user->getEmail())
             ->subject('Réinitialisation de votre mot de passe')
             ->html($html);
