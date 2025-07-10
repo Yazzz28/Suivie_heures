@@ -120,7 +120,14 @@ jobs:
             - name: Setup database
               run: |
                   echo "Setting up test database..."
-                  docker compose exec -T app php bin/console doctrine:database:create --env=test --if-not-exists
+                  # Créer la base de test avec l'utilisateur root
+                  docker compose exec -T mysql mysql -uroot -p${{ secrets.MYSQL_ROOT_PASSWORD }} -e "
+                  CREATE DATABASE IF NOT EXISTS ${{ secrets.DB_DATABASE }}_test;
+                  GRANT ALL PRIVILEGES ON ${{ secrets.DB_DATABASE }}_test.* TO '${{ secrets.DB_USERNAME }}'@'%';
+                  FLUSH PRIVILEGES;
+                  "
+                  
+                  # Maintenant lancer les migrations avec l'utilisateur applicatif
                   docker compose exec -T app php bin/console doctrine:migrations:migrate --env=test --no-interaction
 
             - name: Load fixtures
