@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Dompdf\Options;
+use App\Service\ExportService;
 
 #[Route('/admin')]
 #[IsGranted('ROLE_ADMIN')]
@@ -74,7 +75,8 @@ final class AdminController extends AbstractController
         int $userId,
         int $year,
         int $month,
-        UserRepository $userRepository
+        UserRepository $userRepository,
+        ExportService $exportService
     ): Response {
         $user = $userRepository->find($userId);
 
@@ -96,14 +98,7 @@ final class AdminController extends AbstractController
             'month' => $month,
         ]);
 
-        // Configuration de Dompdf
-        $options = new Options();
-        $options->get('defaultFont');
-
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
+        $dompdf = $exportService->generatePdf($html);
 
         // Génération d’un nom de fichier propre
         $firstName = strtolower(str_replace(' ', '-', $user->getFirstName()));
@@ -115,7 +110,7 @@ final class AdminController extends AbstractController
             200,
             [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="'.$filename.'"',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
             ]
         );
     }
@@ -126,7 +121,8 @@ final class AdminController extends AbstractController
         int $year,
         int $week,
         UserRepository $userRepository,
-        TransportRepository $transportRepository
+        TransportRepository $transportRepository,
+        ExportService $exportService
     ): Response {
         $user = $userRepository->find($userId);
 
@@ -153,7 +149,7 @@ final class AdminController extends AbstractController
         $startDate = null;
         $endDate = null;
         if (!empty($weekDates)) {
-            usort($weekDates, function($a, $b) {
+            usort($weekDates, function ($a, $b) {
                 return $a <=> $b;
             });
             $startDate = reset($weekDates);
@@ -171,14 +167,7 @@ final class AdminController extends AbstractController
             'transportValue' => $transportValue,
         ]);
 
-        // Configuration de Dompdf
-        $options = new Options();
-        $options->get('defaultFont');
-
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
+        $dompdf = $exportService->generatePdf($html);
 
         // Génération d'un nom de fichier propre
         $firstName = strtolower(str_replace(' ', '-', $user->getFirstName()));
@@ -190,7 +179,7 @@ final class AdminController extends AbstractController
             200,
             [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="'.$filename.'"',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
             ]
         );
     }
