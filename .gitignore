@@ -10,3 +10,9 @@
 .idea
 .env.dev
 ###< symfony/framework-bundle ###
+
+.github/instructions
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###

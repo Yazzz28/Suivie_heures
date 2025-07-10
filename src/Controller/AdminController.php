@@ -13,12 +13,15 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Flex\Options;
+use Dompdf\Options;
+use App\Service\ExportService;
 
 #[Route('/admin')]
 #[IsGranted('ROLE_ADMIN')]
 final class AdminController extends AbstractController
 {
+    const USER_NOT_FOUND = 'Utilisateur non trouvé';
+
     #[Route('/', name: 'app_admin')]
     public function index(
         UserRepository $userRepository,
@@ -72,12 +75,13 @@ final class AdminController extends AbstractController
         int $userId,
         int $year,
         int $month,
-        UserRepository $userRepository
+        UserRepository $userRepository,
+        ExportService $exportService
     ): Response {
         $user = $userRepository->find($userId);
 
         if (!$user) {
-            throw $this->createNotFoundException('Utilisateur non trouvé');
+            throw $this->createNotFoundException(self::USER_NOT_FOUND);
         }
 
         // Filtrer les entrées de travail pour le mois et l'année donnés
@@ -94,14 +98,7 @@ final class AdminController extends AbstractController
             'month' => $month,
         ]);
 
-        // Configuration de Dompdf
-        $options = new Options();
-        $options->get('defaultFont', 'Arial');
-
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
+        $dompdf = $exportService->generatePdf($html);
 
         // Génération d’un nom de fichier propre
         $firstName = strtolower(str_replace(' ', '-', $user->getFirstName()));
@@ -113,7 +110,7 @@ final class AdminController extends AbstractController
             200,
             [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="'.$filename.'"',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
             ]
         );
     }
@@ -124,12 +121,13 @@ final class AdminController extends AbstractController
         int $year,
         int $week,
         UserRepository $userRepository,
-        TransportRepository $transportRepository
+        TransportRepository $transportRepository,
+        ExportService $exportService
     ): Response {
         $user = $userRepository->find($userId);
 
         if (!$user) {
-            throw $this->createNotFoundException('Utilisateur non trouvé');
+            throw $this->createNotFoundException(self::USER_NOT_FOUND);
         }
 
         // Récupérer la valeur du transport actuelle
@@ -151,7 +149,7 @@ final class AdminController extends AbstractController
         $startDate = null;
         $endDate = null;
         if (!empty($weekDates)) {
-            usort($weekDates, function($a, $b) {
+            usort($weekDates, function ($a, $b) {
                 return $a <=> $b;
             });
             $startDate = reset($weekDates);
@@ -169,14 +167,7 @@ final class AdminController extends AbstractController
             'transportValue' => $transportValue,
         ]);
 
-        // Configuration de Dompdf
-        $options = new Options();
-        $options->get('defaultFont', 'Arial');
-
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
+        $dompdf = $exportService->generatePdf($html);
 
         // Génération d'un nom de fichier propre
         $firstName = strtolower(str_replace(' ', '-', $user->getFirstName()));
@@ -188,7 +179,7 @@ final class AdminController extends AbstractController
             200,
             [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="'.$filename.'"',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
             ]
         );
     }
@@ -201,7 +192,7 @@ final class AdminController extends AbstractController
     ): Response {
         $user = $userRepository->find($userId);
         if (!$user) {
-            throw $this->createNotFoundException('Utilisateur non trouvé');
+            throw $this->createNotFoundException(self::USER_NOT_FOUND);
         }
         $entityManager->remove($user);
         $entityManager->flush();

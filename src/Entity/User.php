@@ -48,6 +48,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Work::class, mappedBy: 'user', orphanRemoval: true)]
     private Collection $works;
 
+    #[ORM\Column(nullable: true, length: 100)]
+    private ?string $resetToken = null;
+
     public function __construct()
     {
         $this->works = new ArrayCollection();
@@ -168,13 +171,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function removeWork(Work $work): static
     {
-        if ($this->works->removeElement($work)) {
-            // set the owning side to null (unless already changed)
-            if ($work->getUser() === $this) {
-                $work->setUser(null);
-            }
+        if ($this->works->removeElement($work) && $work->getUser() === $this) {
+            $work->setUser(null);
         }
 
+        return $this;
+    }
+
+    public function getResetToken(): ?string
+    {
+        return $this->resetToken;
+    }
+
+    public function setResetToken(?string $resetToken): static
+    {
+        $this->resetToken = $resetToken;
         return $this;
     }
 }

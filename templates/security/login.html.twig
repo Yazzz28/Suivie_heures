@@ -1,49 +1,55 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Connection{% endblock %}
+{% block title %}Connection
+{% endblock %}
 
 {% block body %}
-    <div class="container">
-        <div class="card">
-            {% if error %}
-                <div class="alert alert-danger">
-                    {{ error.messageKey|trans(error.messageData, 'security') }}
-                </div>
-            {% endif %}
+	<div class="container">
+		<div class="card">
+			{% if error %}
+				<div class="alert alert-danger">
+					{{ error.messageKey|trans(error.messageData, 'security') }}
+				</div>
+			{% endif %}
 
-            {% if app.user %}
-                <div class="logged-in">
-                    Vous êtes connecté en tant que {{ app.user.userIdentifier }},
-                    <a href="{{ path('app_logout') }}">Se déconnecter</a>
-                </div>
-            {% endif %}
+			{% if app.user %}
+				<div class="logged-in">
+					Vous êtes connecté en tant que
+					{{ app.user.userIdentifier }},
+					<a href="{{ path('app_logout') }}">Se déconnecter</a>
+				</div>
+			{% endif %}
 
-            <h1>Connection</h1>
+			<h1>Connection</h1>
 
-            <form method="post">
-                <div class="form-group">
-                    <label for="inputEmail">Email</label>
-                    <input type="email" value="{{ last_username }}" name="email" id="inputEmail" autocomplete="email" required autofocus>
-                </div>
+			<form method="post">
+				<div class="form-group">
+					<label for="inputEmail">Email</label>
+					<input type="email" value="{{ last_username }}" name="email" id="inputEmail" autocomplete="email" required autofocus>
+				</div>
 
-                <div class="form-group">
-                    <label for="inputPassword">Password</label>
-                    <input type="password" name="password" id="inputPassword" autocomplete="current-password" required>
-                </div>
+				<div class="form-group">
+					<label for="inputPassword">Password</label>
+					<input type="password" name="password" id="inputPassword" autocomplete="current-password" required>
+				</div>
 
-                <div class="form-group form-check">
-                    <input type="checkbox" name="_remember_me" id="rememberMe" class="form-check-input">
-                    <label for="rememberMe" class="form-check-label">Se souvenir de moi</label>
-                </div>
+				<div class="form-group form-check">
+					<input type="checkbox" name="_remember_me" id="rememberMe" class="form-check-input">
+					<label for="rememberMe" class="form-check-label">Se souvenir de moi</label>
+				</div>
 
-                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+				<input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
 
-                <button class="btn" type="submit">Connection</button>
-            </form>
+				<button class="btn" type="submit">Connection</button>
+			</form>
 
-            <div class="register-link">
-                <a href="{{ path('app_register') }}">Inscrivez-vous</a>
-            </div>
-        </div>
-    </div>
+			<div class="register-link">
+				<a href="{{ path('app_register') }}">Inscrivez-vous</a>
+			</div>
+
+			<div class="forgot-password-link" style="margin-top: 1em;">
+				<a href="{{ path('app_forgot_password_request') }}">Mot de passe oublié ?</a>
+			</div>
+		</div>
+	</div>
 {% endblock %}

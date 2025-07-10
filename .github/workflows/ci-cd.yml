@@ -1,0 +1,158 @@
+name: Docker CI with Tests
+
+on:
+    push:
+        branches: [docker]
+    pull_request:
+        branches: [docker]
+
+jobs:
+    docker-tests:
+        runs-on: ubuntu-latest
+        environment: test
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Create .env file for Docker
+              run: |
+                  echo "Creating .env files for Symfony..."
+                  
+                  # Variables pour Docker Compose (utilisées par docker-compose.yml)
+                  echo "DB_HOST=mysql" >> .env
+                  echo "DB_PORT=3306" >> .env
+                  echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> .env
+                  echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+                  echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+                  echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> .env
+                  echo "DATABASE_URL=mysql://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@mysql:3306/${{ secrets.DB_DATABASE }}" >> .env
+                  
+                  # .env.test pour les tests Symfony
+                  echo "APP_ENV=test" >> .env.test
+                  echo "DATABASE_URL=mysql://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@mysql:3306/${{ secrets.DB_DATABASE }}_test" >> .env.test
+                  
+                  echo "Content of .env file:"
+                  cat .env
+                  echo "Content of .env.test file:"
+                  cat .env.test
+
+            - name: Build and start containers
+              run: |
+                  docker compose up -d --build
+                  echo "Containers started, waiting for MySQL to be ready..."
+
+            - name: Wait for MySQL to be ready
+              run: |
+                  echo "Waiting for MySQL to be ready..."
+                  for i in {1..60}; do
+                    if docker compose exec -T mysql mysqladmin ping --silent; then
+                      echo "MySQL is ready!"
+                      break
+                    fi
+                    if [ $i -eq 60 ]; then
+                      echo "MySQL failed to start within 2 minutes"
+                      docker compose logs mysql
+                      exit 1
+                    fi
+                    echo "Attempt $i/60: MySQL not ready, waiting..."
+                    sleep 2
+                  done
+                  
+                  # Attendre que le container PHP soit complètement prêt
+                  echo "Waiting for PHP container to be ready..."
+                  for i in {1..30}; do
+                    if docker compose exec -T app php --version &>/dev/null; then
+                      echo "PHP container is ready!"
+                      break
+                    fi
+                    if [ $i -eq 30 ]; then
+                      echo "PHP container failed to start within 1 minute"
+                      docker compose logs app
+                      exit 1
+                    fi
+                    echo "Attempt $i/30: PHP container not ready, waiting..."
+                    sleep 2
+                  done
+
+            - name: Show container status
+              run: |
+                  echo "=== Container Status ==="
+                  docker compose ps
+                  echo "=== PHP Container Info ==="
+                  docker compose exec -T app php --version
+
+            - name: Install Composer dependencies
+              run: |
+                  echo "Installing Composer dependencies..."
+                  echo "Current PHP version in container:"
+                  docker compose exec -T app php --version
+                  
+                  # Vérifier les variables d'environnement dans le container
+                  echo "Checking environment variables in container..."
+                  docker compose exec -T app env | grep -E "(DATABASE_URL|DB_|MYSQL_)" || echo "No DB vars found"
+                  
+                  # Installer les dépendances sans exécuter les scripts post-install
+                  echo "Installing dependencies without scripts..."
+                  docker compose exec -T app composer install --prefer-dist --no-progress --optimize-autoloader --no-scripts
+
+            - name: Test MySQL connection from PHP container
+              run: |
+                  echo "Testing MySQL connection from PHP container..."
+                  docker compose exec -T app php -r "
+                  try {
+                      \$pdo = new PDO('mysql:host=mysql;port=3306;charset=utf8mb4', '${{ secrets.DB_USERNAME }}', '${{ secrets.DB_PASSWORD }}');
+                      echo 'MySQL connection successful!' . PHP_EOL;
+                  } catch (Exception \$e) {
+                      echo 'MySQL connection failed: ' . \$e->getMessage() . PHP_EOL;
+                      exit(1);
+                  }
+                  "
+
+            - name: Clear cache safely
+              run: |
+                  echo "Clearing cache for test environment..."
+                  # Skipping database-dependent cache clearing for now
+                  docker compose exec -T app php bin/console cache:clear --env=test --no-debug --no-optional-warmers || echo "Cache clear skipped due to DB issues"
+
+            - name: Setup database
+              run: |
+                  echo "Setting up test database..."
+                  # Créer la base de test avec l'utilisateur root
+                  docker compose exec -T mysql mysql -uroot -p${{ secrets.MYSQL_ROOT_PASSWORD }} -e "
+                  CREATE DATABASE IF NOT EXISTS ${{ secrets.DB_DATABASE }}_test;
+                  GRANT ALL PRIVILEGES ON ${{ secrets.DB_DATABASE }}_test.* TO '${{ secrets.DB_USERNAME }}'@'%';
+                  FLUSH PRIVILEGES;
+                  "
+                  
+                  # Maintenant lancer les migrations avec l'utilisateur applicatif
+                  docker compose exec -T app php bin/console doctrine:migrations:migrate --env=test --no-interaction
+
+            - name: Load fixtures
+              run: |
+                  echo "Loading test fixtures..."
+                  docker compose exec -T app php bin/console doctrine:fixtures:load --env=test --no-interaction
+
+            - name: Run PHPUnit tests
+              run: |
+                  echo "Running PHPUnit tests..."
+                  docker compose exec -T app ./vendor/bin/phpunit --testdox
+
+            - name: Show logs on failure
+              if: failure()
+              run: |
+                  echo "=== Container Logs ==="
+                  docker compose logs
+                  echo "=== MySQL Logs ==="
+                  docker compose logs mysql
+                  echo "=== PHP Logs ==="
+                  docker compose logs app
+
+            - name: Cleanup containers
+              if: always()
+              run: |
+                  echo "Cleaning up containers..."
+                  docker compose down -v
+                  docker system prune -f
