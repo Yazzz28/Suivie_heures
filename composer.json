@@ -35,7 +35,7 @@
     },
     "require-dev": {
         "doctrine/doctrine-fixtures-bundle": "^4.1",
-        "phpunit/phpunit": "11.*",
+        "phpunit/phpunit": "^11.5.26",
         "symfony/maker-bundle": "^1.64",
         "symfony/stopwatch": "7.2.*",
         "symfony/web-profiler-bundle": "7.2.*"
