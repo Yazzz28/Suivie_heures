@@ -1,27 +1,27 @@
 # Étape 1 : Construction de l’application (dépendances Composer)
-FROM composer:2 as vendor-builder
+FROM composer:2 AS vendor-builder
 WORKDIR /app
 # Copie seulement les fichiers de dépendances pour profiter du cache Docker
 COPY composer.json composer.lock ./
 RUN composer install --no-scripts --optimize-autoloader
 
 # Étape 2 : Construction de l’image PHP avec les dépendances système
-FROM php:8.2-fpm
+FROM php:8.3-fpm
 WORKDIR /var/www
 
 # Installer les dépendances système
 RUN apt-get update && apt-get install -y \
-    libzip-dev \
     default-mysql-client \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libxml2-dev \
-    libpq-dev \
-    libonig-dev \
-    zip \
     git \
+    libfreetype6-dev \
+    libjpeg-dev \
+    libonig-dev \
+    libpng-dev \
+    libpq-dev \
+    libxml2-dev \
+    libzip-dev \
     unzip \
+    zip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd pdo pdo_mysql pdo_pgsql zip xml mysqli \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
