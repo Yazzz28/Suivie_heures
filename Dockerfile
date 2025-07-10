@@ -6,7 +6,7 @@ COPY composer.json composer.lock ./
 RUN composer install --no-scripts --optimize-autoloader
 
 # Étape 2 : Construction de l’image PHP avec les dépendances système
-FROM php:8.3-fpm
+FROM php:8.4-fpm
 WORKDIR /var/www
 
 # Installer les dépendances système

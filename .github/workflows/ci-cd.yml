@@ -19,6 +19,18 @@ jobs:
 
             - name: Create .env file for Docker
               run: |
+                  echo "Creating .env files for Symfony..."
+                  
+                  # .env pour l'environnement dev (utilisé par cache:clear)
+                  echo "APP_ENV=dev" >> .env
+                  echo "APP_SECRET=dev-secret-key-for-testing" >> .env
+                  echo "DATABASE_URL=mysql://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@mysql:3306/${{ secrets.DB_DATABASE }}" >> .env
+                  
+                  # .env.test pour les tests
+                  echo "APP_ENV=test" >> .env.test
+                  echo "DATABASE_URL=mysql://${{ secrets.DB_USERNAME }}:${{ secrets.DB_PASSWORD }}@mysql:3306/${{ secrets.DB_DATABASE }}_test" >> .env.test
+                  
+                  # Variables pour Docker Compose
                   echo "DB_HOST=mysql" >> .env
                   echo "DB_PORT=3306" >> .env
                   echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> .env
@@ -77,7 +89,16 @@ jobs:
             - name: Install Composer dependencies
               run: |
                   echo "Installing Composer dependencies..."
-                  docker compose exec -T app composer install --prefer-dist --no-progress --optimize-autoloader
+                  echo "Current PHP version in container:"
+                  docker compose exec -T app php --version
+                  
+                  # Installer les dépendances sans exécuter les scripts post-install
+                  echo "Installing dependencies without scripts..."
+                  docker compose exec -T app composer install --prefer-dist --no-progress --optimize-autoloader --no-scripts
+                  
+                  # Exécuter manuellement le cache clear dans l'environnement test
+                  echo "Clearing cache for test environment..."
+                  docker compose exec -T app php bin/console cache:clear --env=test --no-debug
 
             - name: Setup database
               run: |
