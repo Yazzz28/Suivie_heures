@@ -9,7 +9,7 @@ on:
 jobs:
     test:
         runs-on: ubuntu-latest
-        environment: test  # ← Ajoutez cette ligne
+        environment: test
         services:
             mysql:
                 image: mysql:8.0
@@ -39,7 +39,7 @@ jobs:
             - name: Wait for MySQL
               run: |
                   for i in {1..30}; do
-                    if mysqladmin ping -h127.0.0.1 -u${{ secrets.MYSQL_USER }} -p${{ secrets.MYSQL_PASSWORD }} --silent; then
+                    if mysqladmin ping -h127.0.0.1 -u${{ secrets.DB_USERNAME }} -p${{ secrets.DB_PASSWORD }} --silent; then
                       break
                     fi
                     sleep 2
