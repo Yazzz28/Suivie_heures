@@ -2,12 +2,12 @@ name: CI - Intégration Continue
 
 on:
   push:
-    branches: [development, staging, production]
+    branches: [docker]
   pull_request:
-    branches: [development, staging, production]
+    branches: [docker]
 
 jobs:
-  tests:
+  unit-integration-tests:
     name: 🧪 Tests unitaires et d'intégration
     runs-on: ubuntu-latest
     steps:
@@ -46,7 +46,7 @@ jobs:
   build-docker-image:
     name: 🐳 Build Docker image
     runs-on: ubuntu-latest
-    needs: tests
+    needs: unit-integration-tests
     if: github.event_name == 'push'
     steps:
       - name: 📥 Checkout code
@@ -62,3 +62,21 @@ jobs:
           path: |
             $(docker save hourproject:${{ github.sha }} | gzip > hourproject_${{ github.sha }}.tar.gz && echo hourproject_${{ github.sha }}.tar.gz)
           retention-days: 1
+
+  ci-success:
+    name: ✅ Vérifier le statut du CI
+    runs-on: ubuntu-latest
+    needs: [unit-integration-tests, build-docker-image]
+    if: always()
+    steps:
+      - name: ✅ Vérifier le statut du CI
+        run: |
+          if [[ "${{ needs.unit-integration-tests.result }}" == "success" && \
+                "${{ needs.build-docker-image.result }}" == "success" ]]; then
+            echo "🎉 CI réussi ! Toutes les étapes sont passées avec succès."
+            echo "✅ Tests unitaires/intégration : OK"
+            echo "✅ Construction de l'image Docker : OK"
+          else
+            echo "❌ CI échoué. Vérifiez les logs des étapes précédentes."
+            exit 1
+          fi

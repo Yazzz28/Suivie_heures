@@ -14,16 +14,25 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
       - name: 🏷️ Set Docker image tag
         id: set_tag
         run: |
-          if [[ "${GITHUB_REF##*/}" == "production" ]]; then
+          if [[ "${GITHUB_REF##*/}" == "docker" ]]; then
             echo "tag=production" >> "$GITHUB_OUTPUT"
           else
             echo "tag=staging" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: 🐳 Build and push Docker image
+      - name: 🛠️ Build and Push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -32,11 +41,9 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/hourproject:${{ steps.set_tag.outputs.tag }}
             ${{ secrets.DOCKER_HUB_USERNAME }}/hourproject:${{ steps.set_tag.outputs.tag }}-${{ github.sha }}
-          build-args: |
-            ENV=${{ steps.set_tag.outputs.tag }}
 
   deploy:
-    name: 🚀 Déploiement VPS
+    name: 🚀 Deploy to VPS
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
@@ -52,7 +59,7 @@ jobs:
           VPS_USER="${{ secrets.VPS_USER }}"
           VPS_HOST="${{ secrets.VPS_HOST }}"
           SSH_KEY="~/.ssh/id_ed25519"
-          if [[ "$TAG" == "production" ]]; then
+          if [[ "$TAG" == "docker" ]]; then
             VPS_PATH="~/hourproject/prod"
             PORT="8080"
           else
@@ -75,7 +82,7 @@ jobs:
         run: |
           TAG=${{ needs.build-and-push.outputs.tag }}
           VPS_HOST="${{ secrets.VPS_HOST }}"
-          if [[ "$TAG" == "production" ]]; then
+          if [[ "$TAG" == "docker" ]]; then
             PORT="8080"
           else
             PORT="8081"
@@ -88,7 +95,7 @@ jobs:
             echo "🌐 URL: http://$VPS_HOST:$PORT/"
           fi
 
-  notification:
+  deployment-notification:
     name: 📢 Notification de déploiement
     needs: [build-and-push, deploy]
     runs-on: ubuntu-latest
@@ -108,7 +115,7 @@ jobs:
           echo ""
           if [[ "${{ needs.build-and-push.result }}" == "success" && "${{ needs.deploy.result }}" == "success" ]]; then
             echo "✅ Déploiement réussi"
-            if [[ "$TAG" == "production" ]]; then
+            if [[ "$TAG" == "docker" ]]; then
               echo "🎯 URL Production: http://${{ secrets.VPS_HOST }}:8080/"
             else
               echo "🎯 URL Staging: http://${{ secrets.VPS_HOST }}:8081/"
