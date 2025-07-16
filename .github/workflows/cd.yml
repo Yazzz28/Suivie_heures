@@ -26,10 +26,10 @@ jobs:
       - name: 🏷️ Set Docker image tag
         id: set_tag
         run: |
-          if [[ "${GITHUB_REF##*/}" == "docker" ]]; then
+          if [[ "${GITHUB_REF##*/}" == "production" ]]; then
             echo "tag=production" >> "$GITHUB_OUTPUT"
           else
-            echo "tag=staging" >> "$GITHUB_OUTPUT"
+            echo "tag=docker" >> "$GITHUB_OUTPUT"
           fi
 
       - name: 🛠️ Build and Push Docker image
@@ -43,7 +43,7 @@ jobs:
             ${{ secrets.DOCKER_HUB_USERNAME }}/hourproject:${{ steps.set_tag.outputs.tag }}-${{ github.sha }}
 
   deploy:
-    name: 🚀 Deploy to VPS
+    name: 🚀 Déploiement VPS
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
@@ -59,13 +59,8 @@ jobs:
           VPS_USER="${{ secrets.VPS_USER }}"
           VPS_HOST="${{ secrets.VPS_HOST }}"
           SSH_KEY="~/.ssh/id_ed25519"
-          if [[ "$TAG" == "docker" ]]; then
-            VPS_PATH="~/hourproject/prod"
-            PORT="8080"
-          else
-            VPS_PATH="~/hourproject/staging"
-            PORT="8081"
-          fi
+          VPS_PATH="~/hourproject/prod"
+          PORT="8080"
           ssh -o StrictHostKeyChecking=no -i $SSH_KEY $VPS_USER@$VPS_HOST << EOF
             mkdir -p $VPS_PATH
             cd $VPS_PATH
@@ -82,11 +77,7 @@ jobs:
         run: |
           TAG=${{ needs.build-and-push.outputs.tag }}
           VPS_HOST="${{ secrets.VPS_HOST }}"
-          if [[ "$TAG" == "docker" ]]; then
-            PORT="8080"
-          else
-            PORT="8081"
-          fi
+          PORT="8080"
           sleep 10
           if curl -f -s --max-time 30 http://$VPS_HOST:$PORT/ > /dev/null; then
             echo "✅ Application accessible et fonctionnelle"
@@ -95,7 +86,7 @@ jobs:
             echo "🌐 URL: http://$VPS_HOST:$PORT/"
           fi
 
-  deployment-notification:
+  notification:
     name: 📢 Notification de déploiement
     needs: [build-and-push, deploy]
     runs-on: ubuntu-latest
@@ -115,15 +106,10 @@ jobs:
           echo ""
           if [[ "${{ needs.build-and-push.result }}" == "success" && "${{ needs.deploy.result }}" == "success" ]]; then
             echo "✅ Déploiement réussi"
-            if [[ "$TAG" == "docker" ]]; then
-              echo "🎯 URL Production: http://${{ secrets.VPS_HOST }}:8080/"
-            else
-              echo "🎯 URL Staging: http://${{ secrets.VPS_HOST }}:8081/"
-            fi
+            echo "🎯 URL Production: http://${{ secrets.VPS_HOST }}:8080/"
           else
             echo "❌ Déploiement échoué"
             echo "🔍 Build: ${{ needs.build-and-push.result }}"
             echo "🔍 Deploy: ${{ needs.deploy.result }}"
             echo "📝 Vérifiez les logs des étapes précédentes"
           fi
-
