@@ -2,9 +2,9 @@ name: CI - Intégration Continue
 
 on:
   push:
-    branches: [docker]
+    branches: [development, staging, production]
   pull_request:
-    branches: [docker]
+    branches: [development, staging, production]
 
 jobs:
   tests:
@@ -14,8 +14,11 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
+      - name: 🐳 Vérifier Docker Compose (v2)
+        run: docker compose version
+
       - name: 🐳 Lancer les services Docker (MySQL, PHP, Nginx)
-        run: docker-compose up -d
+        run: docker compose up -d
 
       - name: ⏳ Attendre que MySQL soit prêt
         run: |
@@ -38,7 +41,7 @@ jobs:
 
       - name: 🧹 Arrêter les services Docker
         if: always()
-        run: docker-compose down -v
+        run: docker compose down -v
 
   build-docker-image:
     name: 🐳 Build Docker image
@@ -59,4 +62,3 @@ jobs:
           path: |
             $(docker save hourproject:${{ github.sha }} | gzip > hourproject_${{ github.sha }}.tar.gz && echo hourproject_${{ github.sha }}.tar.gz)
           retention-days: 1
-
