@@ -3,7 +3,6 @@
 echo "📡 Checking network connectivity..."
 ping -c 1 mysql || echo "⚠️ Cannot ping mysql"
 
-# Construire la DATABASE_URL (pour Symfony par exemple)
 export DATABASE_URL="mysql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_DATABASE}?serverVersion=8.0.32&charset=utf8mb4"
 
 # Attendre que MySQL soit prêt
