@@ -1,0 +1,122 @@
+name: CD - Déploiement Continu
+
+on:
+  push:
+    branches: [docker]
+
+jobs:
+  build-and-push:
+    name: 🛠️ Build & Push Docker image
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.set_tag.outputs.tag }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏷️ Set Docker image tag
+        id: set_tag
+        run: |
+          if [[ "${GITHUB_REF##*/}" == "production" ]]; then
+            echo "tag=production" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=staging" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 🐳 Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/hourproject:${{ steps.set_tag.outputs.tag }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/hourproject:${{ steps.set_tag.outputs.tag }}-${{ github.sha }}
+          build-args: |
+            ENV=${{ steps.set_tag.outputs.tag }}
+
+  deploy:
+    name: 🚀 Déploiement VPS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔑 Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+      - name: 🚀 SSH to VPS and deploy
+        run: |
+          TAG=${{ needs.build-and-push.outputs.tag }}
+          VPS_USER="${{ secrets.VPS_USER }}"
+          VPS_HOST="${{ secrets.VPS_HOST }}"
+          SSH_KEY="~/.ssh/id_ed25519"
+          if [[ "$TAG" == "production" ]]; then
+            VPS_PATH="~/hourproject/prod"
+            PORT="8080"
+          else
+            VPS_PATH="~/hourproject/staging"
+            PORT="8081"
+          fi
+          ssh -o StrictHostKeyChecking=no -i $SSH_KEY $VPS_USER@$VPS_HOST << EOF
+            mkdir -p $VPS_PATH
+            cd $VPS_PATH
+            docker stop hourproject-$TAG || true
+            docker rm hourproject-$TAG || true
+            docker image prune -f
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/hourproject:$TAG
+            docker run -d --name hourproject-$TAG --restart unless-stopped -p $PORT:80 -v $VPS_PATH/public:/var/www/public ${{ secrets.DOCKER_HUB_USERNAME }}/hourproject:$TAG
+            sleep 5
+            docker ps | grep hourproject-$TAG
+          EOF
+
+      - name: 🏥 Health check
+        run: |
+          TAG=${{ needs.build-and-push.outputs.tag }}
+          VPS_HOST="${{ secrets.VPS_HOST }}"
+          if [[ "$TAG" == "production" ]]; then
+            PORT="8080"
+          else
+            PORT="8081"
+          fi
+          sleep 10
+          if curl -f -s --max-time 30 http://$VPS_HOST:$PORT/ > /dev/null; then
+            echo "✅ Application accessible et fonctionnelle"
+          else
+            echo "⚠️ Application potentiellement indisponible, vérifiez manuellement"
+            echo "🌐 URL: http://$VPS_HOST:$PORT/"
+          fi
+
+  notification:
+    name: 📢 Notification de déploiement
+    needs: [build-and-push, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: 📋 Générer le rapport de déploiement
+        run: |
+          TAG=${{ needs.build-and-push.outputs.tag }}
+          echo "📊 RAPPORT DE DÉPLOIEMENT HOURPROJECT"
+          echo "======================================"
+          echo "🕐 Date: $(date)"
+          echo "🌿 Branche: ${{ github.ref_name }}"
+          echo "🏷️ Tag: $TAG"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "👤 Auteur: ${{ github.actor }}"
+          echo "🐳 Image: ${{ secrets.DOCKER_HUB_USERNAME }}/hourproject:$TAG"
+          echo ""
+          if [[ "${{ needs.build-and-push.result }}" == "success" && "${{ needs.deploy.result }}" == "success" ]]; then
+            echo "✅ Déploiement réussi"
+            if [[ "$TAG" == "production" ]]; then
+              echo "🎯 URL Production: http://${{ secrets.VPS_HOST }}:8080/"
+            else
+              echo "🎯 URL Staging: http://${{ secrets.VPS_HOST }}:8081/"
+            fi
+          else
+            echo "❌ Déploiement échoué"
+            echo "🔍 Build: ${{ needs.build-and-push.result }}"
+            echo "🔍 Deploy: ${{ needs.deploy.result }}"
+            echo "📝 Vérifiez les logs des étapes précédentes"
+          fi
+

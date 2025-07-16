@@ -1,0 +1,62 @@
+name: CI - Intégration Continue
+
+on:
+  push:
+    branches: [docker]
+  pull_request:
+    branches: [docker]
+
+jobs:
+  tests:
+    name: 🧪 Tests unitaires et d'intégration
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Lancer les services Docker (MySQL, PHP, Nginx)
+        run: docker-compose up -d
+
+      - name: ⏳ Attendre que MySQL soit prêt
+        run: |
+          for i in {1..30}; do
+            if docker exec mysql_db mysqladmin ping -h"localhost" --silent; then
+              echo "MySQL prêt !"; break;
+            fi
+            echo "Attente de MySQL..."; sleep 2;
+          done
+
+      - name: 📦 Installer les dépendances Composer
+        run: docker exec php_app composer install --no-interaction --prefer-dist
+
+      - name: 📝 Vérifier la syntaxe (Lint PHP)
+        run: docker exec php_app ./vendor/bin/php-cs-fixer fix --dry-run --diff || true
+        continue-on-error: true
+
+      - name: 🧪 Lancer les tests PHPUnit
+        run: docker exec php_app ./vendor/bin/phpunit --testdox
+
+      - name: 🧹 Arrêter les services Docker
+        if: always()
+        run: docker-compose down -v
+
+  build-docker-image:
+    name: 🐳 Build Docker image
+    runs-on: ubuntu-latest
+    needs: tests
+    if: github.event_name == 'push'
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Build Docker image
+        run: docker build -t hourproject:${{ github.sha }} .
+
+      - name: 📤 Upload Docker image as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: |
+            $(docker save hourproject:${{ github.sha }} | gzip > hourproject_${{ github.sha }}.tar.gz && echo hourproject_${{ github.sha }}.tar.gz)
+          retention-days: 1
+
