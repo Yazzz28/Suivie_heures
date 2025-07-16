@@ -1,21 +1,32 @@
 name: CD - Déploiement Continu
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI - Intégration Continue"]
+    types:
+      - completed
     branches: [docker]
 
 jobs:
-  build-and-push:
-    name: 🛠️ Build & Push Docker image
+  download-and-push:
+    name: 🐳 Download, Load & Push Docker image
     runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.set_tag.outputs.tag }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
+      - name: 📥 Télécharger l'artifact Docker
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: .
 
-      - name: 🐳 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: 🐳 Charger l'image Docker
+        run: |
+          gunzip -c hourproject_*.tar.gz | docker load
+
+      - name: 🏷️ Taguer l'image Docker
+        run: |
+          IMAGE_ID=$(docker images --format '{{.Repository}}:{{.Tag}} {{.ID}}' | grep hourproject | awk '{print $2}' | head -n1)
+          docker tag $IMAGE_ID ${{ secrets.DOCKER_HUB_USERNAME }}/hourproject:${{ github.sha }}
 
       - name: 🔐 Login to DockerHub
         uses: docker/login-action@v3
@@ -23,28 +34,13 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: 🏷️ Set Docker image tag
-        id: set_tag
+      - name: 🐳 Push Docker image
         run: |
-          if [[ "${GITHUB_REF##*/}" == "production" ]]; then
-            echo "tag=production" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=docker" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: 🛠️ Build and Push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/hourproject:${{ steps.set_tag.outputs.tag }}
-            ${{ secrets.DOCKER_HUB_USERNAME }}/hourproject:${{ steps.set_tag.outputs.tag }}-${{ github.sha }}
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/hourproject:${{ github.sha }}
 
   deploy:
     name: 🚀 Déploiement VPS
-    needs: build-and-push
+    needs: download-and-push
     runs-on: ubuntu-latest
     steps:
       - name: 🔑 Set up SSH key
@@ -55,7 +51,7 @@ jobs:
 
       - name: 🚀 SSH to VPS and deploy
         run: |
-          TAG=${{ needs.build-and-push.outputs.tag }}
+          TAG=${{ github.sha }}
           VPS_USER="${{ secrets.VPS_USER }}"
           VPS_HOST="${{ secrets.VPS_HOST }}"
           SSH_KEY="~/.ssh/id_ed25519"
@@ -75,7 +71,7 @@ jobs:
 
       - name: 🏥 Health check
         run: |
-          TAG=${{ needs.build-and-push.outputs.tag }}
+          TAG=${{ github.sha }}
           VPS_HOST="${{ secrets.VPS_HOST }}"
           PORT="8080"
           sleep 10
@@ -88,13 +84,13 @@ jobs:
 
   notification:
     name: 📢 Notification de déploiement
-    needs: [build-and-push, deploy]
+    needs: [download-and-push, deploy]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: 📋 Générer le rapport de déploiement
         run: |
-          TAG=${{ needs.build-and-push.outputs.tag }}
+          TAG=${{ github.sha }}
           echo "📊 RAPPORT DE DÉPLOIEMENT HOURPROJECT"
           echo "======================================"
           echo "🕐 Date: $(date)"
@@ -104,12 +100,12 @@ jobs:
           echo "👤 Auteur: ${{ github.actor }}"
           echo "🐳 Image: ${{ secrets.DOCKER_HUB_USERNAME }}/hourproject:$TAG"
           echo ""
-          if [[ "${{ needs.build-and-push.result }}" == "success" && "${{ needs.deploy.result }}" == "success" ]]; then
+          if [[ "${{ needs.download-and-push.result }}" == "success" && "${{ needs.deploy.result }}" == "success" ]]; then
             echo "✅ Déploiement réussi"
             echo "🎯 URL Production: http://${{ secrets.VPS_HOST }}:8080/"
           else
             echo "❌ Déploiement échoué"
-            echo "🔍 Build: ${{ needs.build-and-push.result }}"
+            echo "🔍 Build: ${{ needs.download-and-push.result }}"
             echo "🔍 Deploy: ${{ needs.deploy.result }}"
             echo "📝 Vérifiez les logs des étapes précédentes"
           fi
